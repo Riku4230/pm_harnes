@@ -1,11 +1,12 @@
 # PM Harness Design — Claude Code Harness Engineering for Project Management
 
-> v2.0 — レビュー指摘反映版（hooks API実機確認済み）
+> v3.0 — 3層フィードバック + Agent SDK統合
 
 ## 0. Overview
 
 PM業務をClaude Code nativeで行うためのハーネス設計。
-Agent SDKやコードは使わず、markdown + shell script + JSONのみで構成する。
+基本はmarkdown + shell script + JSONで構成。
+自動フィードバック（project-advisor-llm, self-improve）にのみClaude Agent SDKを使用する。
 
 ### 設計根拠
 
@@ -44,10 +45,13 @@ pm-harness/
 │   │   ├── 02-context-routing.md            ポインタ表
 │   │   └── 03-anti-patterns.md              やらかし記録
 │   ├── hooks/
-│   │   ├── session-start.sh                 STATUS.json要約注入
-│   │   ├── session-end.sh                   SESSION_LOG + IMPROVEMENTS蓄積
+│   │   ├── session-start.sh                 STATUS.json + ALERTS.json注入
+│   │   ├── session-end.sh                   SESSION_LOG + ルールチェック + 自動FB起動
 │   │   ├── validate-state.sh                state/*.jsonバリデーション
-│   │   └── approval-gate.sh                 state/docs/変更の承認チェック
+│   │   ├── approval-gate.sh                 state/docs/変更の承認チェック
+│   │   ├── project-advisor-rules.sh         ルールベースプロジェクトFB（毎回）
+│   │   ├── project-advisor-llm.ts           LLMベースプロジェクトFB（日次、Agent SDK）
+│   │   └── self-improve.ts                  ハーネス自己改善（週次、Agent SDK）
 │   └── skills/
 │       ├── project-init/                    プロジェクト初期設定
 │       ├── daily-report/                    日報生成
@@ -56,7 +60,7 @@ pm-harness/
 │       ├── risk-check/                      リスク管理
 │       ├── stakeholder-update/              ステークホルダー通知
 │       ├── context-sync/                    ドキュメント同期+矛盾検出
-│       ├── context-review/                  ステアリング: 改善レビュー
+│       ├── context-review/                  ステアリング: 改善レビュー（手動起動）
 │       └── cross-review/                    Cross-Model Review（Codex）
 └── templates/
     ├── personal/
@@ -74,11 +78,14 @@ project-x/
 │   │   ├── 01-pm-behavior.md
 │   │   ├── 02-context-routing.md
 │   │   └── 03-anti-patterns.md
-│   ├── hooks/                           ← 4つのhook（実機確認済みイベントのみ）
-│   │   ├── session-start.sh                SessionStart
-│   │   ├── session-end.sh                  SessionEnd
-│   │   ├── validate-state.sh               PostToolUse
-│   │   └── approval-gate.sh                PreToolUse
+│   ├── hooks/                           ← 4 hook + 3 自動FB（Agent SDK）
+│   │   ├── session-start.sh                SessionStart: STATUS + ALERTS注入
+│   │   ├── session-end.sh                  SessionEnd: ログ + ルールFB + 自動FB起動
+│   │   ├── validate-state.sh               PostToolUse: JSONバリデーション
+│   │   ├── approval-gate.sh                PreToolUse: 承認ゲート
+│   │   ├── project-advisor-rules.sh        毎回: ルールベースプロジェクトFB
+│   │   ├── project-advisor-llm.ts          日次: LLMプロジェクトFB（Agent SDK）
+│   │   └── self-improve.ts                 週次: ハーネス自己改善（Agent SDK）
 │   ├── skills/                          ← PM特化スキル群
 │   │   └── (上記と同じ)
 │   └── settings.json
@@ -92,7 +99,9 @@ project-x/
 │   ├── WBS.json
 │   ├── CHANGELOG.json
 │   ├── IMPROVEMENTS.json
-│   └── SESSION_LOG.json
+│   ├── SESSION_LOG.json
+│   ├── ALERTS.json                         プロジェクトFB結果（rule + LLM）
+│   └── REVIEW_PROPOSALS.json               ハーネス改善提案（self-improve結果）
 ├── meeting/
 └── workspace/
 ```
@@ -599,48 +608,352 @@ Computational（決定論的）が最も強い制御。まずComputationalを充
 
 ---
 
-## 6. ステアリングループ（自己改善）
+## 6. 3層フィードバック + ステアリングループ
 
-### 6.1 サイクル
+加賀谷氏（Asterminds）のSelf-improve 4層構造を参考に、PM業務向けに再設計。
+Agent SDKは自動フィードバックの2箇所（project-advisor-llm, self-improve）のみで使用。
+
+### 6.1 3層の全体像
 
 ```
-タスク実行
+SessionEnd hook
   │
-  ├── FB sensor が異常検出 → 即時修正 + state/IMPROVEMENTS.jsonに記録
+  ├── Layer 1: project-advisor-rules.sh   毎回、shell、〜100ms
+  │   「数字で検出できるプロジェクトの危険信号」
   │
-  ▼
-SessionEnd hook（自動）
+  ├── Layer 2: project-advisor-llm.ts     日次、Agent SDK(Sonnet)、〜$0.05/回
+  │   「文脈を読まないと分からないプロジェクトの危険信号」
   │
-  ├── state/SESSION_LOG.jsonに行動記録を追記
-  │
-  ▼
-context-sync スキル実行時（自動リマインダー）
-  │
-  ├── IMPROVEMENTS.json件数チェック
-  ├── 5件超 → 「context-reviewを実行してください」と表示
-  │
-  ▼
-context-review スキル（ユーザーが起動 or /schedule で定期実行）
-  │
-  ├── IMPROVEMENTS.jsonを読む
-  ├── SESSION_LOG.jsonでパターン分析
-  ├── 頻出問題 → rules/03-anti-patterns.md に昇格
-  ├── スキルの改善提案 → 該当スキルを修正
-  ├── 不要になったrule → 削除（肥大化防止）
-  ├── IMPROVEMENTS.jsonの処理済みエントリを削除
-  └── ★ 全変更はユーザー承認後に適用（自律的ルール書き換えはしない）
+  └── Layer 3: self-improve.ts            週次、Agent SDK(Sonnet)、〜$0.10/回
+      「ハーネス自体（rules/skills/hooks）の改善提案」
 ```
 
-### 6.2 剪定ルール
+| 層 | 頻度 | コスト | 検出対象 | 出力先 |
+|---|---|---|---|---|
+| **L1: ルールベースFB** | 毎セッション | ゼロ | 期限超過、未対応リスク、未共有期間 | state/ALERTS.json (rule_alerts) |
+| **L2: LLMプロジェクトFB** | 日次（24h経過時） | 〜$0.05 | 意思決定矛盾、見積もり甘さ、コミュニケーション懸念 | state/ALERTS.json (llm_alerts) |
+| **L3: ハーネス自己改善** | 週次（10件+3日 or 20件強制） | 〜$0.10 | skills改善、rules追加、routing修正 | state/REVIEW_PROPOSALS.json |
+
+### 6.2 Layer 1: project-advisor-rules.sh（毎回、決定論的）
+
+```bash
+#!/bin/bash
+# SessionEnd で毎回発火。決定論的チェックのみ（LLM不使用、高速）
+set -e
+CWD="${CLAUDE_CWD:-.}"
+
+python3 -c "
+import json, os
+from datetime import datetime, timedelta
+
+alerts = []
+now = datetime.now()
+
+# 1. 期限超過タスク検出
+wbs = '$CWD/state/WBS.json'
+if os.path.exists(wbs):
+    tasks = json.load(open(wbs)).get('tasks', [])
+    for t in tasks:
+        if t.get('due') and t.get('status') != 'done':
+            try:
+                due = datetime.fromisoformat(t['due'])
+                if due < now:
+                    days = (now - due).days
+                    alerts.append({
+                        'type': 'overdue_task',
+                        'severity': 'high' if days > 7 else 'medium',
+                        'message': f\"タスク '{t.get('name')}' が{days}日超過\"
+                    })
+            except: pass
+
+# 2. 対応策未定の高リスク
+risk = '$CWD/state/RISK.json'
+if os.path.exists(risk):
+    risks = json.load(open(risk)).get('risks', [])
+    for r in risks:
+        if not r.get('mitigation') and r.get('impact') == 'high':
+            alerts.append({
+                'type': 'unmitigated_risk',
+                'severity': 'high',
+                'message': f\"高リスク '{r.get('name')}' の対応策が未定義\"
+            })
+        if r.get('updated'):
+            try:
+                if (now - datetime.fromisoformat(r['updated'])).days > 30:
+                    alerts.append({
+                        'type': 'stale_risk',
+                        'severity': 'medium',
+                        'message': f\"リスク '{r.get('name')}' が30日以上未更新\"
+                    })
+            except: pass
+
+# 3. ステークホルダーへの長期未共有
+cl = '$CWD/state/CHANGELOG.json'
+if os.path.exists(cl):
+    entries = json.load(open(cl)).get('entries', [])
+    sh_entries = [e for e in entries if e.get('type') == 'stakeholder_update']
+    if sh_entries:
+        try:
+            last = datetime.fromisoformat(sh_entries[-1]['date'])
+            gap = (now - last).days
+            if gap > 14:
+                alerts.append({
+                    'type': 'stale_communication',
+                    'severity': 'medium',
+                    'message': f'ステークホルダーへの共有が{gap}日間なし'
+                })
+        except: pass
+
+# 書き出し（既存のllm_alertsは保持）
+alerts_path = '$CWD/state/ALERTS.json'
+existing = {}
+if os.path.exists(alerts_path):
+    try: existing = json.load(open(alerts_path))
+    except: pass
+
+existing['rule_alerts'] = alerts
+existing['rule_checked'] = now.isoformat()
+
+with open(alerts_path, 'w') as f:
+    json.dump(existing, f, ensure_ascii=False, indent=2)
+" 2>/dev/null || true
+```
+
+### 6.3 Layer 2: project-advisor-llm.ts（日次、Agent SDK）
+
+発火条件: 前回LLMチェックから24時間以上経過。
+
+```typescript
+import { query } from "@anthropic-ai/claude-code";
+
+async function dailyProjectReview() {
+  const result = await query({
+    prompt: `
+あなたはプロジェクトアドバイザー。以下を読んで、PMが見落としている
+危険信号や改善機会を指摘してください。
+
+読むべきファイル:
+1. state/STATUS.json（現在状態）
+2. state/RISK.json（リスク台帳）
+3. state/WBS.json（スケジュール）
+4. state/CHANGELOG.json（直近10件の意思決定）
+5. state/SESSION_LOG.json（直近5セッション）
+
+観点:
+- 意思決定間の矛盾はないか
+- リスクの評価は妥当か（過小/過大評価）
+- スケジュールの現実性（このペースで間に合うか）
+- コミュニケーション上の懸念（共有漏れ、根回し不足）
+- 「やるべきだがやっていないこと」
+
+出力: state/ALERTS.jsonのllm_alertsフィールドにJSON配列で書き出し。
+各アラート: {type, severity(high/medium/low), message, reasoning}
+高確信のものだけ出力。「かもしれない」レベルは出さない。
+llm_checkedフィールドも現在時刻で更新する。
+    `,
+    options: {
+      cwd: process.cwd(),
+      allowedTools: ["Read", "Write"],
+      permissionMode: "acceptEdits",
+      model: "sonnet",
+      maxTurns: 5,
+    }
+  });
+}
+
+dailyProjectReview();
+```
+
+### 6.4 Layer 3: self-improve.ts（週次、Agent SDK）
+
+発火条件: (IMPROVEMENTS.json 10件以上 AND 前回実行から3日以上) OR 20件以上（強制）。
+
+加賀谷氏のSelf-improve構造に対応:
+- **check**: rules/skills/の整合性を決定論的にチェック
+- **entropy**: docs/ ↔ state/の矛盾をLLM意味解析で検出
+- **feedback-loop**: IMPROVEMENTS.json分析 → 改善提案生成
+
+```typescript
+import { query } from "@anthropic-ai/claude-code";
+import { execSync } from "child_process";
+
+async function selfImprove() {
+  // Phase 1: check（決定論的、高速）
+  const checkIssues: string[] = [];
+  
+  // context-routingの参照先が全て存在するか
+  // anti-patterns.mdが10件超でないか
+  // skills/のRequired Contextの参照先が存在するか
+  // （shell scriptで実行）
+
+  // Phase 2: entropy + feedback-loop（LLM推論）
+  const result = await query({
+    prompt: `
+あなたはハーネスエンジニア。PM Harnessの改善提案を行ってください。
+
+読むべきファイル:
+1. state/IMPROVEMENTS.json（蓄積された改善提案）
+2. state/SESSION_LOG.json（直近のセッション履歴）
+3. .claude/rules/ 配下の全ファイル
+4. .claude/skills/ 配下の各SKILL.md
+
+分析:
+- IMPROVEMENTS.jsonの頻出パターンを特定
+- rules/の不要ルール（3ヶ月未発火）を特定
+- skills/のRequired Contextに追加すべきファイルがないか
+- context-routingのポインタ表に不足がないか
+
+出力: state/REVIEW_PROPOSALS.jsonに以下の形式で書き出し:
+{
+  "proposals": [
+    {"target": "変更対象", "action": "追加/修正/削除", "reason": "根拠", "priority": "high/medium/low"}
+  ],
+  "last_run": "ISO 8601",
+  "improvements_processed": 処理したIMPROVEMENTS件数
+}
+全変更はユーザー承認後に適用。自律的に書き換えてはいけない。
+    `,
+    options: {
+      cwd: process.cwd(),
+      allowedTools: ["Read", "Write"],
+      permissionMode: "acceptEdits",
+      model: "sonnet",
+      maxTurns: 8,
+    }
+  });
+}
+
+selfImprove();
+```
+
+### 6.5 session-end.shの統合（発火制御）
+
+```bash
+#!/bin/bash
+# SessionEnd で発火。3層のFBを条件付きで起動
+set -e
+CWD="${CLAUDE_CWD:-.}"
+
+# --- SESSION_LOG追記 ---
+python3 -c "
+import json, datetime, os
+log_path = '$CWD/state/SESSION_LOG.json'
+try: log = json.load(open(log_path)) if os.path.exists(log_path) else {'sessions': []}
+except: log = {'sessions': []}
+log['sessions'].append({'timestamp': datetime.datetime.now().isoformat()})
+if len(log['sessions']) > 100: log['sessions'] = log['sessions'][-100:]
+with open(log_path, 'w') as f: json.dump(log, f, ensure_ascii=False, indent=2)
+" 2>/dev/null || true
+
+# --- Layer 1: ルールベースFB（毎回） ---
+bash "$CWD/.claude/hooks/project-advisor-rules.sh" 2>/dev/null || true
+
+# --- Layer 2: LLMプロジェクトFB（日次: 24h経過時のみ） ---
+LLM_HOURS=$(python3 -c "
+import json,os
+from datetime import datetime
+f='$CWD/state/ALERTS.json'
+if os.path.exists(f):
+    ts=json.load(open(f)).get('llm_checked','2000-01-01T00:00:00')
+    print(int((datetime.now()-datetime.fromisoformat(ts)).total_seconds()/3600))
+else: print(999)
+" 2>/dev/null || echo "999")
+
+if [ "$LLM_HOURS" -ge 24 ]; then
+  npx ts-node "$CWD/.claude/hooks/project-advisor-llm.ts" &
+fi
+
+# --- Layer 3: ハーネス自己改善（週次: 10件+3日 or 20件強制） ---
+ITEMS=$(python3 -c "
+import json,os
+f='$CWD/state/IMPROVEMENTS.json'
+print(len(json.load(open(f)).get('items',[]))) if os.path.exists(f) else print(0)
+" 2>/dev/null || echo "0")
+
+LAST_DAYS=$(python3 -c "
+import json,os
+from datetime import datetime
+f='$CWD/state/REVIEW_PROPOSALS.json'
+if os.path.exists(f):
+    ts=json.load(open(f)).get('last_run','2000-01-01')
+    print((datetime.now()-datetime.fromisoformat(ts)).days)
+else: print(999)
+" 2>/dev/null || echo "999")
+
+if [ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ]); then
+  npx ts-node "$CWD/.claude/hooks/self-improve.ts" &
+fi
+```
+
+### 6.6 session-start.shのALERTS表示追加
+
+```bash
+#!/bin/bash
+# SessionStart で発火
+set -e
+CWD="${CLAUDE_CWD:-.}"
+
+# STATUS.json要約
+# （既存の§3.3と同じ）
+
+# ALERTS表示
+ALERTS="$CWD/state/ALERTS.json"
+if [ -f "$ALERTS" ]; then
+  python3 -c "
+import json
+a = json.load(open('$ALERTS'))
+rules = a.get('rule_alerts', [])
+llms = a.get('llm_alerts', [])
+if rules or llms:
+    print()
+    print('## Alerts')
+    for r in rules:
+        sev = '🔴' if r['severity'] == 'high' else '🟡'
+        print(f\"  {sev} [rule] {r['message']}\")
+    for l in llms:
+        sev = '🔴' if l['severity'] == 'high' else '🟡'
+        print(f\"  {sev} [llm] {l['message']}\")
+" 2>/dev/null || true
+fi
+
+# REVIEW_PROPOSALS表示
+PROPOSALS="$CWD/state/REVIEW_PROPOSALS.json"
+if [ -f "$PROPOSALS" ]; then
+  python3 -c "
+import json
+p = json.load(open('$PROPOSALS'))
+props = p.get('proposals', [])
+if props:
+    print()
+    print(f'## Harness Improvement Proposals ({len(props)}件)')
+    print('context-reviewを実行して適用してください')
+" 2>/dev/null || true
+fi
+```
+
+### 6.7 context-review スキル（手動起動 or /schedule）
+
+REVIEW_PROPOSALS.jsonに基づいてハーネス改善を実行。全変更はユーザー承認必須。
+
+### 6.8 剪定ルール
 
 anti-patterns.mdが10件を超えたらcontext-reviewで剪定する:
 - 3ヶ月間発火していないルール → 削除候補
 - モデルのアップデートで不要になったルール → 削除
 - 複数ルールを統合できるもの → 統合
 
-### 6.3 SESSION_LOGのローテーション
+### 6.9 SESSION_LOGのローテーション
 
 SESSION_LOG.jsonは最新100件のみ保持。session-end.shで自動ローテーション。
+
+### 6.10 投資判断（加賀谷氏のフレームワーク準拠）
+
+| 消えるもの（3-6ヶ月寿命） | 残るもの（長期投資対象） |
+|---|---|
+| Compaction workaround | ワークフロー定義（skills） |
+| Context resets | ドメイン知識（docs/state/） |
+| 特定モデル向けプロンプトハック | 評価の仕組み（FB sensor） |
+| | **自己改善ループ（3層FB）** |
 
 ---
 
@@ -745,9 +1058,11 @@ project_type: {personal|consulting|system_dev}
 | Success is silent | 正常時はstate更新のみ。異常時だけ詳細報告 |
 | Failure-to-Rule変換 | ミス → IMPROVEMENTS.json → anti-patterns.md |
 | Computational First | まずComputational FBで固め、Inferentialは段階的に追加 |
+| 3層フィードバック | L1ルールベース(毎回) + L2 LLM(日次) + L3ハーネス改善(週次) |
 | Cross-Model Review | 重要な成果物はCodex or subagentでセカンドオピニオン |
 | Human approval gate | state/docs/変更はPreToolUse hookでログ。ステアリング変更は人間承認必須 |
 | Token Budget | 1スキル実行あたり10,000トークン以内 |
+| Agent SDK限定利用 | 自動FB（project-advisor-llm, self-improve）のみ。日常スキルはClaude Code native |
 
 ### やらないこと
 
