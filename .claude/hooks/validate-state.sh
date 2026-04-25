@@ -1,6 +1,6 @@
 #!/bin/bash
 # PostToolUse(Edit|Write) で発火
-# state/*.jsonの変更のみ検査
+# state/*.jsonの変更のみ検査: 構文チェック + スキーマバリデーション
 set -e
 CWD="${CLAUDE_CWD:-.}"
 
@@ -18,33 +18,74 @@ except:
 case "$FILE_PATH" in
   */state/*.json)
     if [ -f "$FILE_PATH" ]; then
-      # JSON構文チェック
-      python3 -c "import json; json.load(open('$FILE_PATH'))" 2>&1
+      python3 -c "
+import json, sys, os
+
+f = '$FILE_PATH'
+fname = os.path.basename(f)
+data = json.load(open(f))
+errors = []
+
+# --- JSON構文は既にパス（json.loadが成功） ---
+
+# --- スキーマバリデーション ---
+
+if fname == 'STATUS.json':
+    for field in ['project_name', 'project_type']:
+        if not data.get(field):
+            errors.append(f'STATUS.json: {field} is required and must not be empty')
+
+elif fname == 'RISK.json':
+    valid_impact = {'high', 'medium', 'low'}
+    valid_prob = {'high', 'medium', 'low'}
+    for i, r in enumerate(data.get('risks', [])):
+        prefix = f'RISK.json risks[{i}]'
+        if not r.get('name'):
+            errors.append(f'{prefix}: name is required')
+        if r.get('impact') and r['impact'] not in valid_impact:
+            errors.append(f'{prefix}: impact must be high/medium/low, got \"{r[\"impact\"]}\"')
+        if r.get('probability') and r['probability'] not in valid_prob:
+            errors.append(f'{prefix}: probability must be high/medium/low, got \"{r[\"probability\"]}\"')
+        if r.get('impact') == 'high' and not r.get('mitigation', '').strip():
+            errors.append(f'{prefix}: high-impact risk \"{r.get(\"name\")}\" requires mitigation')
+
+elif fname == 'WBS.json':
+    valid_status = {'not_started', 'in_progress', 'done', 'blocked'}
+    for i, t in enumerate(data.get('tasks', [])):
+        prefix = f'WBS.json tasks[{i}]'
+        if not t.get('name'):
+            errors.append(f'{prefix}: name is required')
+        if t.get('status') and t['status'] not in valid_status:
+            errors.append(f'{prefix}: status must be not_started/in_progress/done/blocked, got \"{t[\"status\"]}\"')
+        if t.get('start_date') and t.get('due'):
+            if t['start_date'] > t['due']:
+                errors.append(f'{prefix}: start_date ({t[\"start_date\"]}) > due ({t[\"due\"]})')
+
+elif fname == 'CHANGELOG.json':
+    # append-only確認
+    count_file = f + '.count'
+    current = len(data.get('entries', []))
+    if os.path.exists(count_file):
+        prev = int(open(count_file).read().strip())
+        if current < prev:
+            errors.append(f'CHANGELOG.json: entries decreased ({prev} -> {current}), append-only violation')
+    with open(count_file, 'w') as b:
+        b.write(str(current))
+    # エントリのフィールドチェック
+    for i, e in enumerate(data.get('entries', [])):
+        if not e.get('date'):
+            errors.append(f'CHANGELOG.json entries[{i}]: date is required')
+        if not e.get('description'):
+            errors.append(f'CHANGELOG.json entries[{i}]: description is required')
+
+if errors:
+    for e in errors:
+        print(f'SCHEMA ERROR: {e}', file=sys.stderr)
+    sys.exit(2)
+" 2>&1
       if [ $? -ne 0 ]; then
-        echo "ERROR: $FILE_PATH is invalid JSON" >&2
         exit 2
       fi
-      # CHANGELOG.json append-only確認
-      case "$FILE_PATH" in
-        */CHANGELOG.json)
-          python3 -c "
-import json, os
-f = '$FILE_PATH'
-bak = f + '.count'
-current = len(json.load(open(f)).get('entries', []))
-if os.path.exists(bak):
-    prev = int(open(bak).read().strip())
-    if current < prev:
-        print(f'ERROR: CHANGELOG entries decreased ({prev} -> {current})')
-        exit(2)
-with open(bak, 'w') as b:
-    b.write(str(current))
-" 2>&1
-          if [ $? -ne 0 ]; then
-            exit 2
-          fi
-          ;;
-      esac
     fi
     ;;
 esac
