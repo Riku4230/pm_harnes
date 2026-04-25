@@ -1,0 +1,20 @@
+# Project: {project_name}
+
+project_type: {project_type}
+
+## PM-Harness
+- rules: .claude/rules/ （PM判断原則 + ルーティング + anti-patterns）
+- hooks: .claude/hooks/ （セッション管理 + バリデーション + 3層FB）
+- skills: .claude/skills/ （PMワークフロー）
+- docs: docs/ （人間向け知識、JIT読み込み）
+- state: state/ （AI向け構造化データ、JIT読み込み）
+
+## Working Directory
+作業はworkspace/で行う。成果物もここに格納。
+議事録はmeeting/に格納。
+
+## Key Constraints
+- rulesは60行以下を維持する
+- @参照は使わない（即時全読込されるため）
+- 1スキル実行あたりのRead合計は10,000トークン以内
+- 外部送信は人間が行う（AIは下書きまで）
