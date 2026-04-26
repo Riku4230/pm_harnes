@@ -2,29 +2,29 @@
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [{"type": "command", "command": "bash .claude/hooks/session-start.sh"}]
+        "hooks": [{"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\""}]
       }
     ],
     "SessionEnd": [
       {
-        "hooks": [{"type": "command", "command": "bash .claude/hooks/session-end.sh"}]
+        "hooks": [{"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-end.sh\""}]
       }
     ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [{"type": "command", "command": "bash .claude/hooks/approval-gate.sh"}]
+        "hooks": [{"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/approval-gate.sh\""}]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [{"type": "command", "command": "bash .claude/hooks/validate-state.sh"}]
+        "hooks": [{"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/validate-state.sh\""}]
       }
     ],
     "Stop": [
       {
-        "hooks": [{"type": "command", "command": "bash .claude/hooks/stop-advisor.sh"}]
+        "hooks": [{"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-advisor.sh\""}]
       }
     ]
   }
