@@ -1,11 +1,17 @@
 ---
 name: retro
-description: Retrospective. Analyze logs, generate lessons. Schedulable.
-when_to_use: 「振り返りして」「レトロスペクティブ」「今週の反省」「スプリント振り返り」
-allowed-tools: Read, Write
-permission_mode: edit---
+description: Retrospective + harness improvement. Analyze, learn, apply fixes.
+when_to_use: 「振り返りして」「レトロスペクティブ」「改善して」「今週の反省」
+allowed-tools: Read, Write, Edit
+persona: personas/pm-lead.md
+policy: policies/quality-policy.md
+permission_mode: full
+---
 
 # retro
+
+振り返り → 教訓生成 → **ハーネス改善の適用**まで一括で行う。
+③ステアリングループの実行スキル。
 
 ## Required Context
 - state/CHANGELOG.json
@@ -13,39 +19,35 @@ permission_mode: edit---
 - state/SESSION_LOG.json
 - state/STATUS.json
 - state/RISK.json
+- state/ALERTS.json
+- .claude/rules/03-anti-patterns.md
 
 ## Token Budget
 〜5,000トークン
 
-## Permission Mode
-**readonly** — 分析と提案のみ。ファイル変更はcontext-reviewで行う。
-
 ## ワークフロー
 
-### Step 1: 期間の確認
-対象期間を確認（デフォルト: 直近1週間）。
-SESSION_LOG.jsonから対象期間のセッション数を把握。
+### Phase 1: 振り返り分析
 
-### Step 2: 意思決定の振り返り
-CHANGELOG.jsonから対象期間のエントリを抽出:
+対象期間を確認（デフォルト: 直近1週間）。
+
+**意思決定の振り返り**（CHANGELOG.json）:
 - どんな決定をしたか
 - その決定は現在も妥当か
-- 撤回・修正された決定はないか（Decision Drift）
+- 撤回・修正された決定はないか
 
-### Step 3: 問題パターンの分析
-IMPROVEMENTS.jsonから:
-- 頻出する問題カテゴリの特定
-- 同じ問題が繰り返されていないか
+**問題パターンの分析**（IMPROVEMENTS.json）:
+- 頻出する問題カテゴリ
+- 同じ問題が3回以上繰り返されていないか → anti-patterns昇格候補
 - どの層（①構造 ②検知 ③改善）で防げたか
 
-### Step 4: リスクの振り返り
-RISK.jsonから:
-- 対応策が機能したリスク
-- 想定外だったリスク
-- 見落としていたリスク
+**セッション活動**（SESSION_LOG.json）:
+- よく使われたスキル
+- よく編集されたファイル
 
-### Step 5: 教訓の生成
-以下の形式でworkspace/に振り返りレポートを生成:
+### Phase 2: 教訓レポート生成
+
+workspace/retro-{date}.mdに生成:
 
 ```markdown
 # Retrospective: {期間}
@@ -54,19 +56,40 @@ RISK.jsonから:
 ## Problem（問題だったこと）
 ## Try（次に試すこと）
 
-## ハーネス改善提案
-- ①に昇格すべき: ...
-- ②に追加すべき: ...
-- anti-patternsに追加すべき: ...
+## ハーネス改善案
+| # | 対象 | 変更 | 層 | 根拠（インシデント） |
 ```
 
-### Step 6: 改善提案の記録
-Tryの中でハーネス改善に関するものをstate/IMPROVEMENTS.jsonに追記。
-context-reviewで承認後に適用。
+### Phase 3: ハーネス改善の適用
+
+改善案を1つずつユーザーに提示。承認されたもののみ適用。
+
+**同じミスが3回 → anti-patternsに昇格:**
+- IMPROVEMENTS.jsonで同種の問題が3回以上 → rules/03-anti-patterns.mdに追加
+- エントリには必ず「日付・インシデント・対策」を記載
+- 例: `## AP-001: WBS更新前にリスク確認漏れ (2026-05-01) - WBS更新時にRISK.jsonも確認する`
+
+**不要ルールは3ヶ月未発火で剪定:**
+- anti-patterns.mdの各ルール作成日を確認
+- 直近のALERTS.jsonに関連する検出がないルール → 削除候補
+- 10件超の場合は必ず剪定
+
+**context-routingの更新:**
+- 「このファイルをRequired Contextに追加すべきだった」→ routing表に追加
+- 「このスキルでこのファイルを読むべきだった」→ スキルのRequired Context追記
+
+**policiesの更新:**
+- 新しいルールや基準 → 該当policyファイルに追記
+
+### Phase 4: クリーンアップ
+
+- IMPROVEMENTS.jsonの処理済みエントリを削除
+- REVIEW_PROPOSALS.jsonがあれば適用済み提案を削除
+- state/STATUS.json更新
 
 ### /schedule対応
 ```
-/schedule で「毎週金曜 17:00にretroを実行」が可能。
-実行結果はworkspace/retro-{date}.mdに保存され、
-次回セッション開始時に通知される。
+/schedule で定期実行可能。
+schedule実行時: Phase 1-2（分析+レポート）のみ。Phase 3はスキップ。
+手動実行時: Phase 1-4（分析+レポート+改善適用+クリーンアップ）全実行。
 ```
