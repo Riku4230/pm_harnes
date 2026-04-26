@@ -224,8 +224,7 @@ my-project/
 
 | スキル | やること | 権限 |
 |---|---|---|
-| setup | 初回セットアップ（ヒアリング→Git→Schedule） | full |
-| project-init | プロジェクト情報の再入力 | full |
+| setup | 初回セットアップ（ヒアリング→ファイル生成→Git→Schedule） | full |
 | context-pack | 情報収集・整理 | edit |
 | meeting-import | 議事録→決定事項+TODO | edit |
 | wbs-update | WBS進捗更新 | edit |
@@ -237,13 +236,16 @@ my-project/
 | retro | 振り返り（定期実行可） | readonly |
 | weekly-report | 週次レポート（定期実行可） | readonly |
 
-### プロジェクトタイプ
+### ファイル生成
 
-| タイプ | 用途 | 構成 |
-|---|---|---|
-| **personal** | 日常・個人タスク | 最小（STATUS.json + PROJECT.mdのみ） |
-| **consulting** | コンサル・BPR・導入支援 | フル（全state/ + 全docs/） |
-| **system_dev** | システム開発 | フル + SPEC.md + BACKLOG.json |
+`/setup` がプロジェクト内容をヒアリングし、必要なファイルだけを動的に生成する。タイプを事前に選ぶ必要はない。
+
+| 状況 | 生成されるファイル |
+|---|---|
+| 全プロジェクト共通 | STATUS.json, CHANGELOG.json, PROJECT.md 等（7ファイル） |
+| 関係者がいる | + STAKEHOLDER.md, COMMUNICATION.md |
+| スケジュール管理が必要 | + WBS.json, RISK.json |
+| システム開発 | + SPEC.md, BACKLOG.json |
 
 ---
 
