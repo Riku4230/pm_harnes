@@ -46,7 +46,7 @@ try:
             parts.append(s["current_phase"])
         lines.append(" / ".join(parts))
         if s.get("current_task"):
-            lines.append(f"  task: {s['current_task']}")
+            lines.append(f"  doing: {s['current_task']}")
         if s.get("next_actions"):
             lines.append(f"  next: {', '.join(str(a) for a in s['next_actions'][:3])}")
 except:
@@ -54,16 +54,32 @@ except:
 
 try:
     a = json.load(open(os.path.join(cwd, "state/ALERTS.json")))
-    for r in a.get("rule_alerts", []):
-        sev = "!!" if r.get("severity") == "high" else "!"
+    rule_alerts = a.get("rule_alerts", [])
+    llm_alerts = a.get("llm_alerts", [])
+    high = []
+    warn = []
+    for r in rule_alerts:
         msg = r.get("message") or r.get("title") or ""
+        cat = r.get("type", "")
         if msg:
-            lines.append(f"  {sev} {msg}")
-    for l in a.get("llm_alerts", []):
-        sev = "!!" if l.get("severity") == "high" else "!"
+            label = f"[{cat}] {msg}" if cat else msg
+            if r.get("severity") == "high":
+                high.append(label)
+            else:
+                warn.append(label)
+    for l in llm_alerts:
         msg = l.get("message") or l.get("title") or ""
+        cat = l.get("category", "")
         if msg:
-            lines.append(f"  {sev} {msg}")
+            label = f"[{cat}] {msg}" if cat else msg
+            if l.get("severity") == "high":
+                high.append(label)
+            else:
+                warn.append(label)
+    if high:
+        lines.append(f"  RISK({len(high)}): " + " / ".join(high[:3]))
+    if warn:
+        lines.append(f"  NOTE({len(warn)}): " + " / ".join(warn[:3]))
 except:
     pass
 
