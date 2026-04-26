@@ -51,12 +51,38 @@ elif fname == 'RISK.json':
 
 elif fname == 'WBS.json':
     valid_status = {'not_started', 'in_progress', 'done', 'blocked'}
+    task_names = set()
     for i, t in enumerate(data.get('tasks', [])):
         prefix = f'WBS.json tasks[{i}]'
         if not t.get('name'):
             errors.append(f'{prefix}: name is required')
+        else:
+            task_names.add(t['name'])
         if t.get('status') and t['status'] not in valid_status:
             errors.append(f'{prefix}: status must be not_started/in_progress/done/blocked, got \"{t[\"status\"]}\"')
+    # 依存関係の循環検出
+    tasks = data.get('tasks', [])
+    dep_map = {}
+    for t in tasks:
+        name = t.get('name', '')
+        deps = t.get('dependencies', [])
+        if name and deps:
+            dep_map[name] = deps
+    def has_cycle(node, visited, stack):
+        visited.add(node)
+        stack.add(node)
+        for dep in dep_map.get(node, []):
+            if dep in stack:
+                return True
+            if dep not in visited and has_cycle(dep, visited, stack):
+                return True
+        stack.discard(node)
+        return False
+    visited = set()
+    for name in dep_map:
+        if name not in visited:
+            if has_cycle(name, visited, set()):
+                errors.append(f'WBS.json: dependency cycle detected involving \"{name}\"')
         if t.get('start_date') and t.get('due'):
             if t['start_date'] > t['due']:
                 errors.append(f'{prefix}: start_date ({t[\"start_date\"]}) > due ({t[\"due\"]})')

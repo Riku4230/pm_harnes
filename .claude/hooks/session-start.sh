@@ -2,7 +2,9 @@
 # SessionStart で発火
 # STATUS.json要約 + ALERTS.json表示 + Bootstrap Check
 set -e
-CWD="${CLAUDE_CWD:-.}"
+
+# CLAUDE_PROJECT_DIRまたはカレントディレクトリ
+CWD="${CLAUDE_PROJECT_DIR:-.}"
 
 # --- Bootstrap Check ---
 if [ ! -d "$CWD/state" ]; then
@@ -23,10 +25,19 @@ import json, sys
 try:
     with open('$CWD/state/STATUS.json') as f:
         s = json.load(f)
+    name = s.get('project_name', '')
+    if not name:
+        print('## PM-Harness: セットアップ未完了')
+        print('「セットアップして」と言ってプロジェクトを初期化してください。')
+        sys.exit(0)
     print('## Current Status')
-    print(f\"Project: {s.get('project_name', 'N/A')}\")
-    print(f\"Type: {s.get('project_type', 'N/A')}\")
-    print(f\"Phase: {s.get('current_phase', 'N/A')}\")
+    print(f\"Project: {name}\")
+    ptype = s.get('project_type', '')
+    if ptype:
+        print(f\"Type: {ptype}\")
+    phase = s.get('current_phase', '')
+    if phase:
+        print(f\"Phase: {phase}\")
     print(f\"Updated: {s.get('last_updated', 'N/A')}\")
     ct = s.get('current_task')
     if ct:
@@ -85,4 +96,14 @@ try:
 except:
     pass
 " 2>/dev/null || true
+fi
+
+# --- 新しいworkspace/ファイルの通知 ---
+if [ -d "$CWD/workspace" ]; then
+  NEW_FILES=$(find "$CWD/workspace" -type f -mtime -1 2>/dev/null | head -5)
+  if [ -n "$NEW_FILES" ]; then
+    echo ""
+    echo "## Recent workspace files (24h)"
+    echo "$NEW_FILES" | while read f; do echo "  $(basename "$f")"; done
+  fi
 fi
