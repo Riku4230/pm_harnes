@@ -80,8 +80,11 @@ AskUserQuestion:
 
 git init → .gitignore → commit → （GitHub選択時）gh repo create + push
 
-### Step 6: Schedule + 情報ソース
+### Step 6: Schedule設定（RemoteTrigger）
 
+**前提: Step 5でGitHub連携済みであること。**
+
+まずAskUserQuestionで選択:
 ```
 AskUserQuestion:
   questions:
@@ -108,8 +111,51 @@ AskUserQuestion:
           description: "後から追加可能"
 ```
 
-選択に応じてschedule設定 + SOURCES.json追加。
-ソースのIDは選択後に個別に聞く。
+選択されたscheduleをRemoteTrigger(create)で登録する。
+GitHubリポジトリURLはgit remote get-url originで取得。
+
+**source-sync（毎日9:00 JST = 0:00 UTC）:**
+```
+RemoteTrigger(create):
+  body:
+    name: "pm-harness: source-sync"
+    cron_expression: "0 0 * * *"
+    job_config:
+      ccr:
+        session_context:
+          allowed_tools: ["Bash","Read","Write","Edit","Glob","Grep"]
+          model: "claude-sonnet-4-6"
+          sources:
+            - git_repository:
+                url: "{github_url}"
+                allow_unrestricted_git_push: true
+        events:
+          - type: "user"
+            data:
+              message:
+                role: "user"
+                content: "/source-sync を実行してください。完了後 git add sources/ state/ && git commit -m 'source-sync: {date}' && git push origin main"
+```
+
+**weekly-report（毎週金曜16:00 JST = 7:00 UTC）:**
+```
+RemoteTrigger(create):
+  body:
+    name: "pm-harness: weekly-report"
+    cron_expression: "0 7 * * 5"
+    job_config: （同様の構造、promptはweekly-reportスキル実行+commit+push）
+```
+
+**retro（毎週金曜17:00 JST = 8:00 UTC）:**
+```
+RemoteTrigger(create):
+  body:
+    name: "pm-harness: retro"
+    cron_expression: "0 8 * * 5"
+    job_config: （同様の構造、promptはretroスキル実行（Phase1-2のみ）+commit+push）
+```
+
+ソースのIDは選択後に個別に聞き、state/SOURCES.jsonに追加。
 
 ### Step 7: 完了
 

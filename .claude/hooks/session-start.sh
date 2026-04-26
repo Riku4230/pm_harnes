@@ -56,10 +56,14 @@ try:
     a = json.load(open(os.path.join(cwd, "state/ALERTS.json")))
     for r in a.get("rule_alerts", []):
         sev = "!!" if r.get("severity") == "high" else "!"
-        lines.append(f"  {sev} {r.get('message', '')}")
+        msg = r.get("message") or r.get("title") or ""
+        if msg:
+            lines.append(f"  {sev} {msg}")
     for l in a.get("llm_alerts", []):
         sev = "!!" if l.get("severity") == "high" else "!"
-        lines.append(f"  {sev} {l.get('message', '')}")
+        msg = l.get("message") or l.get("title") or ""
+        if msg:
+            lines.append(f"  {sev} {msg}")
 except:
     pass
 

@@ -1,16 +1,14 @@
 #!/bin/bash
 # Stop hook: 応答完了ごとに発火
-# L2 LLMプロジェクトFBの日次起動判定 + L3ハーネス改善の週次起動判定
-# 条件を満たした場合のみ、claude CLIをバックグラウンドで起動
+# L2 LLMプロジェクトFB + L3ハーネス改善の起動判定
 set -e
 
 CWD="${CLAUDE_PROJECT_DIR:-.}"
 
-# state/が存在しなければスキップ
 [ ! -d "$CWD/state" ] && exit 0
 [ ! -f "$CWD/state/STATUS.json" ] && exit 0
 
-# プロジェクト名が空（未セットアップ）ならスキップ
+# 未セットアップならスキップ
 PROJECT_NAME=$(python3 -c "
 import json
 s = json.load(open('$CWD/state/STATUS.json'))
@@ -18,7 +16,7 @@ print(s.get('project_name', ''))
 " 2>/dev/null || echo "")
 [ -z "$PROJECT_NAME" ] && exit 0
 
-# --- L2: LLMプロジェクトFB（24h経過時のみ） ---
+# --- L2: LLMプロジェクトFB（6h経過時のみ） ---
 LLM_HOURS=$(python3 -c "
 import json, os
 from datetime import datetime
@@ -35,8 +33,8 @@ else:
 " 2>/dev/null || echo "999")
 
 if [ "$LLM_HOURS" -ge 6 ]; then
-  # claude CLIでL2分析をバックグラウンド実行
-  claude -p "あなたはプロジェクトアドバイザー。以下のファイルを読んで危険信号を検出してください。
+  cd "$CWD"
+  nohup claude -p "あなたはプロジェクトアドバイザー。以下のファイルを読んで危険信号を検出してください。
 
 読むファイル:
 1. state/STATUS.json
@@ -51,11 +49,10 @@ if [ "$LLM_HOURS" -ge 6 ]; then
 - やるべきだがやっていないこと
 
 結果をstate/ALERTS.jsonのllm_alertsフィールドに書き出してください。
-llm_checkedフィールドも現在時刻で更新。既存のrule_alertsは変更しない。
+llm_checkedフィールドも現在時刻ISO8601で更新。既存のrule_alertsは変更しない。
 高確信のものだけ。" \
-    --allowedTools "Read,Write" \
+    --allowed-tools "Read,Write" \
     --model sonnet \
-    --max-turns 5 \
     > /dev/null 2>&1 &
 fi
 
@@ -82,7 +79,8 @@ else:
 " 2>/dev/null || echo "999")
 
 if [ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ]); then
-  claude -p "あなたはハーネスエンジニア。PM-Harnessの改善提案を行ってください。
+  cd "$CWD"
+  nohup claude -p "あなたはハーネスエンジニア。PM-Harnessの改善提案を行ってください。
 
 読むファイル:
 1. state/IMPROVEMENTS.json
@@ -96,12 +94,10 @@ if [ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ]); then
   ②検知できたはず → L1センサーにチェック追加
   ③新規対応 → 新しいルールやスキル
 
-結果をstate/REVIEW_PROPOSALS.jsonに書き出し:
-{\"proposals\": [...], \"last_run\": \"現在時刻ISO8601\"}
+結果をstate/REVIEW_PROPOSALS.jsonに書き出し。
 rules/やskills/を直接書き換えてはいけない。" \
-    --allowedTools "Read,Write" \
+    --allowed-tools "Read,Write" \
     --model sonnet \
-    --max-turns 8 \
     > /dev/null 2>&1 &
 fi
 
