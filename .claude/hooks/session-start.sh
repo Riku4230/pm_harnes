@@ -7,13 +7,13 @@ CWD="${CLAUDE_CWD:-.}"
 # --- Bootstrap Check ---
 if [ ! -d "$CWD/state" ]; then
   echo "## PM-Harness: state/ directory not found"
-  echo "Run project-init skill to set up this project."
+  echo "Run setup skill to set up this project."
   exit 0
 fi
 
 if [ ! -f "$CWD/state/STATUS.json" ]; then
   echo "## PM-Harness: STATUS.json not found"
-  echo "Run project-init skill to initialize project state."
+  echo "Run setup skill to initialize project state."
   exit 0
 fi
 

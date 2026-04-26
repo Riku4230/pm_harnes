@@ -91,8 +91,8 @@ ${checkContext}
       `,
       options: {
         cwd,
-        allowedTools: ["Read", "Write"],
-        permissionMode: "acceptEdits",
+        allowedTools: ["Read"],
+        permissionMode: "default",
         model: "sonnet",
         maxTurns: 8,
       },

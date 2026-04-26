@@ -24,3 +24,11 @@
 | state/ | AI向け構造化データ（JSON） | STATUS.json, RISK.json, WBS.json 等 |
 | meeting/ | 議事録 | YYYY-MM-DD_会議名.md |
 | workspace/ | 作業成果物（下書き、レポート） | スキル名-YYYY-MM-DD.md（例: weekly-report-2026-04-25.md） |
+
+## CHANGELOG.jsonエントリフォーマット
+
+全スキルがCHANGELOG.jsonに追記する際は以下のフォーマットに従う:
+```json
+{"date": "YYYY-MM-DD", "type": "decision|stakeholder_update|risk_update|scope_change", "description": "内容"}
+```
+typeは必須。project-advisor-rules.shがtypeでフィルタする。

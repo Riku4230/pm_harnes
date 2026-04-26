@@ -27,5 +27,4 @@ project_type: {project_type}
 - state/JSONの編集はスキーマバリデーションが自動実行される
 
 ### 初回セットアップ
-1. 「セットアップして」→ /setup（Git/GitHub/Schedule設定）
-2. 「プロジェクト始めたい」→ /project-init（ヒアリング→docs/state/生成）
+「セットアップして」→ /setup（ヒアリング→ファイル生成→Git/GitHub→Schedule）

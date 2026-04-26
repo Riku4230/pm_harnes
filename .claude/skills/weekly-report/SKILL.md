@@ -2,8 +2,8 @@
 name: weekly-report
 description: Weekly report. Aggregate progress/decisions/risks. Schedulable.
 when_to_use: 「週報作って」「今週のまとめ」「ウィークリーレポート」「定例資料」
-allowed-tools: Read
----
+allowed-tools: Read, Write
+permission_mode: edit---
 
 # weekly-report
 

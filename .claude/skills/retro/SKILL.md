@@ -2,8 +2,8 @@
 name: retro
 description: Retrospective. Analyze logs, generate lessons. Schedulable.
 when_to_use: 「振り返りして」「レトロスペクティブ」「今週の反省」「スプリント振り返り」
-allowed-tools: Read
----
+allowed-tools: Read, Write
+permission_mode: edit---
 
 # retro
 
