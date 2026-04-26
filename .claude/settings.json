@@ -21,6 +21,11 @@
         "matcher": "Edit|Write",
         "hooks": [{"type": "command", "command": "bash .claude/hooks/validate-state.sh"}]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [{"type": "command", "command": "bash .claude/hooks/stop-advisor.sh"}]
+      }
     ]
   }
 }
