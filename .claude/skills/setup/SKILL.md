@@ -48,26 +48,22 @@ AskUserQuestion:
 
 プロジェクトの性質（日常/コンサル/開発）はゴールと関係者の回答から自動推測する。
 
-### Step 3: ファイル生成 + 初期コンテキスト投入
+### Step 3: 既存ファイルにヒアリング内容を書き込み
 
-ヒアリング結果から必要ファイルを自動判定して生成。**ユーザーにファイル一覧の確認は求めない。**
+**テンプレートからのコピーやディレクトリ作成は不要。**
+pm_harnesをフォルダコピーした時点でstate/docs/meeting/workspace/sources/は全て存在する。
+setupがやるのはヒアリング内容を既存ファイルに書き込むことだけ。
 
-判定ロジック:
+書き込み先:
+- state/STATUS.json → project_name, current_phase, next_actions, last_updated を記入
+- docs/PROJECT.md → ゴール、スコープ、期限を記入
+- CLAUDE.md → project_name, project_typeを記入
 
-| 条件 | 追加生成 |
-|---|---|
-| 全プロジェクト共通 | STATUS, CHANGELOG, IMPROVEMENTS, SESSION_LOG, ALERTS, REVIEW_PROPOSALS, PROJECT.md |
-| チーム or クライアント | + STAKEHOLDER.md, COMMUNICATION.md |
-| 期限あり | + WBS.json, RISK.json |
-| 開発系と推測 | + SPEC.md, BACKLOG.json |
+関係者がいる場合（チーム or クライアント選択時）:
+- docs/STAKEHOLDER.md → 関係者情報を記入
 
-templates/から生成し、ヒアリング内容を記入:
-- state/STATUS.json: project_name, current_phase, next_actions
-- docs/PROJECT.md: ゴール、スコープ、期限
-- docs/STAKEHOLDER.md: 関係者（該当時）
-- state/WBS.json: 初期タスク（期限から逆算、3-5個）
-- CLAUDE.md: project_nameを記入
-- meeting/, workspace/, sources/ ディレクトリ作成
+期限がある場合:
+- state/WBS.json → 期限から逆算して初期タスク3-5個を生成
 
 ### Step 5: Git + GitHub
 
