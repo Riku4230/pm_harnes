@@ -44,11 +44,22 @@ try:
         lines.append(f"[{name}]")
         if s.get("current_task"):
             lines.append(f"  doing: {s['current_task']}")
-        na = s.get("next_actions", [])
-        if na:
-            lines.append(f"  TODO({len(na)}):")
-            for a in na[:5]:
-                lines.append(f"    - {a}")
+        try:
+            wbs = json.load(open(os.path.join(cwd, "state/WBS.json")))
+            tasks = [t for t in wbs.get("tasks", []) if t.get("status") != "done"]
+            tasks.sort(key=lambda t: t.get("due", "9999-12-31"))
+            if tasks:
+                lines.append(f"  TODO({len(tasks)}):")
+                for t in tasks[:5]:
+                    due = t.get("due", "")
+                    n = t.get("name", "")
+                    lines.append(f"    - {n} ({due})" if due else f"    - {n}")
+        except:
+            na = s.get("next_actions", [])
+            if na:
+                lines.append(f"  TODO({len(na)}):")
+                for a in na[:5]:
+                    lines.append(f"    - {a}")
 except:
     lines.append("PM-Harness: status error")
 
