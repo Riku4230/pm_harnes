@@ -42,8 +42,6 @@ try:
         lines.append("PM-Harness: setup required")
     else:
         lines.append(f"[{name}]")
-        if s.get("current_phase"):
-            lines.append(f"  phase: {s['current_phase']}")
         if s.get("current_task"):
             lines.append(f"  doing: {s['current_task']}")
         na = s.get("next_actions", [])
