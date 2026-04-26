@@ -10,8 +10,6 @@ project_type: {project_type}
 - .claude/rules/ — PM判断原則 + ルーティング + anti-patterns（60行以下）
 - .claude/hooks/ — セッション管理 + バリデーション + 3層フィードバック
 - .claude/skills/ — PMワークフロー（12スキル）
-- .claude/personas/ — 役割定義（pm-lead, analyst, reviewer）
-- .claude/policies/ — ポリシー（risk, communication, quality, loop-monitor）
 
 ### データ
 - docs/ — 人間向けドキュメント（Markdown、外部共有可）

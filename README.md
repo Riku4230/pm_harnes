@@ -30,7 +30,7 @@ hooks（session-start.sh）がセッション開始時にstate/を読み、**何
 ### 間違いが構造的に起きない
 
 - 高リスクに対応策なしで保存 → **JSONスキーマでブロック**
-- AIが外部に直接送信 → **allowed-toolsで構造的に不可能**
+- AIの外部直接送信 → **スキル指示で禁止（構造的ブロックではなく運用ルール）**
 - 過去の意思決定を改ざん → **append-only制約でブロック**
 
 「気をつけてね」ではなく、**間違いが物理的に起きない環境**を作る。
@@ -188,7 +188,7 @@ PM-Harnessの設計の中心軸。
 | 層 | やること | 例 |
 |---|---|---|
 | **①そもそもさせない** | 構造で間違いを不可能に | JSONスキーマ、allowed-tools、append-only |
-| **②やった後に検知** | 3層FBで危険信号を検出 | L1ルール(毎回) + L2 LLM(日次) + Cross-Model(任意) |
+| **②やった後に検知** | 3層FBで危険信号を検出 | L1ルール(毎回) + L2 LLM(6h間隔) + Cross-Model(任意) |
 | **③仕組み自体を改善** | ステアリングループ | IMPROVEMENTS蓄積 → retro → ハーネス改善適用 |
 
 ### フォルダ構成
@@ -229,7 +229,7 @@ my-project/
 | context-sync | ドキュメント整合性確認 | readonly |
 | context-review | ステアリング実行 | full |
 | cross-review | Cross-Modelレビュー | readonly |
-| retro | 振り返り（定期実行可） | readonly |
+| retro | 振り返り+ハーネス改善（定期実行可） | full |
 | weekly-report | 週次レポート（定期実行可） | edit |
 
 ### ファイル生成
