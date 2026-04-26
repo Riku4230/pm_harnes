@@ -1,6 +1,6 @@
 ---
 name: wbs-update
-description: WBSの進捗更新、マイルストーン確認、依存関係チェック。
+description: Update WBS progress, check milestones and dependencies.
 when_to_use: 「WBS更新して」「進捗更新」「スケジュール確認」
 persona: personas/pm-lead.md
 policy: policies/quality-policy.md

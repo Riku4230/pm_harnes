@@ -1,6 +1,6 @@
 ---
 name: context-review
-description: ステアリングループ実行。IMPROVEMENTS/REVIEW_PROPOSALSを基にハーネスを改善。
+description: Run steering loop. Apply harness improvements from IMPROVEMENTS/PROPOSALS.
 when_to_use: 「改善レビューして」「ハーネス改善」「context-review」
 persona: personas/pm-lead.md
 policy: policies/quality-policy.md

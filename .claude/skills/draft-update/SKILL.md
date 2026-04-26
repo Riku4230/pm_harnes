@@ -1,6 +1,6 @@
 ---
 name: draft-update
-description: ステークホルダー向けの下書きを生成する。送信は行わない。
+description: Generate draft for stakeholders. No sending.
 when_to_use: 「報告書の下書き作って」「クライアントへの共有文作って」「進捗報告の下書き」
 allowed-tools: Read
 persona: personas/pm-lead.md

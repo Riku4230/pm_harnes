@@ -1,6 +1,6 @@
 ---
 name: retro
-description: プロジェクトの振り返り。CHANGELOG/IMPROVEMENTS/SESSION_LOGを分析し、教訓と改善案を生成。/scheduleで定期実行可能。
+description: Retrospective. Analyze logs, generate lessons. Schedulable.
 when_to_use: 「振り返りして」「レトロスペクティブ」「今週の反省」「スプリント振り返り」
 allowed-tools: Read
 ---

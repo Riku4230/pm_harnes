@@ -1,6 +1,6 @@
 ---
 name: weekly-report
-description: 週次レポート生成。今週の進捗・決定事項・リスク・来週予定を自動集約。/scheduleで定期実行可能。
+description: Weekly report. Aggregate progress/decisions/risks. Schedulable.
 when_to_use: 「週報作って」「今週のまとめ」「ウィークリーレポート」「定例資料」
 allowed-tools: Read
 ---

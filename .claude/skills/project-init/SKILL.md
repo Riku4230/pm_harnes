@@ -1,6 +1,6 @@
 ---
 name: project-init
-description: 新しいプロジェクトの初期設定。ヒアリング→タイプ判定→ディレクトリ生成→初期コンテキスト投入。
+description: Initialize new project. Hearing, type detection, setup.
 when_to_use: 「新しいプロジェクトを始めたい」「プロジェクト初期化」「セットアップ」
 ---
 

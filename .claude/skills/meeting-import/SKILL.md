@@ -1,6 +1,6 @@
 ---
 name: meeting-import
-description: 会議の文字起こしから議事録を生成し、決定事項・TODOを抽出する。
+description: Transcription to minutes. Extract decisions and TODOs.
 when_to_use: 「議事録取り込んで」「この会議まとめて」「ミーティングメモ整理」
 persona: personas/analyst.md
 policy: policies/communication-policy.md
