@@ -34,7 +34,7 @@ else:
     print(999)
 " 2>/dev/null || echo "999")
 
-if [ "$LLM_HOURS" -ge 24 ]; then
+if [ "$LLM_HOURS" -ge 6 ]; then
   # claude CLIでL2分析をバックグラウンド実行
   claude -p "あなたはプロジェクトアドバイザー。以下のファイルを読んで危険信号を検出してください。
 
