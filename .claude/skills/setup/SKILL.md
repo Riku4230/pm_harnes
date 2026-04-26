@@ -1,88 +1,85 @@
 ---
 name: setup
-description: Git/GitHub init, configure schedules. Run after copying pm-harness.
-when_to_use: 「セットアップして」「setup」「初期設定」
+description: Full project setup. Hearing, git, GitHub, schedules, initial docs.
+when_to_use: 「セットアップして」「setup」「プロジェクト始めたい」「初期設定」
 ---
 
 # setup
 
-PM-Harnessフォルダをコピーした後の初回セットアップ。
-前提: pm-harnesリポジトリをフォルダにコピー済みで、.claude/が既に存在する。
+PM-Harnessの初回セットアップ。ヒアリングからSchedule設定まで一括で行う。
 
-## 前提確認
+## 前提
 
-まず以下を確認:
-- .claude/rules/ が存在するか
-- .claude/hooks/ が存在するか
-- .claude/skills/ が存在するか
-- .claude/settings.json が存在するか
-
-存在しない場合: 「pm-harnesリポジトリをこのフォルダにコピーしてください」と案内。
+pm-harnesリポジトリをフォルダにコピー済みで、.claude/が存在すること。
 
 ## ワークフロー
 
-### Step 1: プロジェクトタイプ確認
+### Step 1: プロジェクトヒアリング
 
-タイプだけ確認（詳細ヒアリングはproject-initで行う）:
-- **personal** — 日常・個人タスク（最小構成）
-- **consulting** — コンサル・BPR・導入支援（フル構成）
-- **system_dev** — システム開発（フル + SPEC + BACKLOG）
+以下をユーザーに確認:
+- **プロジェクト名** — 何のプロジェクトか
+- **ゴール** — 何を達成したいか
+- **関係者** — 誰が関わるか（1人ならpersonal候補）
+- **期限** — いつまでか（あれば）
+- **概要** — どんな内容か（コンサル？開発？個人タスク？）
+
+### Step 2: タイプ自動判定
+
+ヒアリング内容からプロジェクトタイプを判定し、ユーザーに確認:
+
+| タイプ | 判定基準 |
+|---|---|
+| **personal** | 関係者が自分だけ、日常タスク、個人の目標 |
+| **consulting** | クライアントがいる、BPR/導入支援、複数ステークホルダー |
+| **system_dev** | システム開発、コーディングあり、技術仕様が必要 |
+
+「{タイプ}で設定しますがよいですか？」と確認。
+
+### Step 3: Git初期化 + GitHub連携
+
+```bash
+git init  # 既にgitリポジトリでなければ
+```
+
+.gitignore生成:
+```
+state/*.count
+node_modules/
+```
+
+GitHub連携:
+- 「GitHubリポジトリを作成しますか？定期レポートの自動実行に必要です。」
+- A) 作成する → `gh repo create {project_name} --private --source=. --push`
+- B) スキップ → scheduleは後で設定可能と案内
+
+### Step 4: ファイル生成
 
 タイプに応じてstate/とdocs/の初期ファイルを生成:
 
-**personal**:
-```bash
-mkdir -p state docs meeting workspace
-# templates/personal/ から必要なファイルをコピー
-```
+**personal**: state/STATUS.json + docs/PROJECT.md
+**consulting**: 全state/(7ファイル) + 全docs/(3ファイル)
+**system_dev**: consulting全部 + docs/SPEC.md + state/BACKLOG.json
 
-**consulting**:
-```bash
-mkdir -p state docs meeting workspace
-# templates/consulting/ から全ファイルをコピー
-```
+共通: meeting/ + workspace/ ディレクトリ作成
+CLAUDE.mdにproject_name, project_typeを記入。
 
-**system_dev**:
-```bash
-mkdir -p state docs meeting workspace
-# templates/system_dev/ から全ファイルをコピー
-```
+### Step 5: 初期コンテキスト投入
 
-CLAUDE.mdにproject_typeを記入。
+Step 1のヒアリング内容をファイルに記入:
+- state/STATUS.json: project_name, project_type, current_phase, next_actions
+- docs/PROJECT.md: ゴール、スコープ、期限
+- docs/STAKEHOLDER.md: 関係者情報（consulting/system_devのみ）
+- state/WBS.json: 初期マイルストーン（期限があれば逆算してタスク生成）
 
-### Step 2: Git初期化
-
-```bash
-# 既にgitリポジトリでなければ初期化
-git init
-
-# .gitignore生成（なければ）
-echo "state/*.count" >> .gitignore
-echo "node_modules/" >> .gitignore
-```
-
-### Step 3: GitHub連携
-
-scheduleの実行にGitHubリモートが必要。先に設定する。
-
-```bash
-gh auth status  # 認証確認
-```
-
-ユーザーに確認:
-- 「GitHubリポジトリを作成しますか？scheduleの自動実行に必要です。」
-- A) 作成する（推奨）→ `gh repo create {project_name} --private --source=. --push`
-- B) スキップ → scheduleは後で設定可能と案内
-
-### Step 4: 初回コミット
+### Step 6: 初回コミット
 
 ```bash
 git add -A
-git commit -m "PM-Harness: initial setup ({project_type})"
+git commit -m "PM-Harness: project setup ({project_type})"
 git push  # GitHub連携済みの場合
 ```
 
-### Step 5: Schedule設定
+### Step 7: Schedule設定
 
 **前提: GitHubリモートが設定済みであること。**
 
@@ -95,23 +92,21 @@ git push  # GitHub連携済みの場合
 
 Claude Codeの `/schedule` で設定。
 
-### Step 6: 完了 → project-init案内
+### Step 8: 完了
 
 ```
 PM-Harnessセットアップ完了！
 
-✅ プロジェクトタイプ: {type}
-✅ Git: 初期化済み
-✅ GitHub: {連携済み / スキップ}
-✅ ファイル配置: state/ docs/ meeting/ workspace/
-✅ Schedule: {設定内容 / スキップ}
-✅ Hooks: .claude/settings.json で設定済み
-   - SessionStart: プロジェクト状況の自動表示
-   - SessionEnd: L1ルールFB自動実行 + L2/L3判定
-   - PreToolUse: docs/state/変更ログ
-   - PostToolUse: JSONスキーマバリデーション
+✅ プロジェクト: {project_name}（{project_type}）
+✅ Git/GitHub: {状況}
+✅ ファイル: docs/ state/ meeting/ workspace/
+✅ Schedule: {設定内容}
+✅ Hooks: 自動で有効（セッション開始/終了/バリデーション/承認ゲート）
 
-次のステップ:
-  → 「プロジェクト始めたい」と言ってproject-initを実行してください。
-  プロジェクトの詳細をヒアリングし、docs/state/を充実させます。
+次のセッションから:
+- 開始時にプロジェクト状況 + アラートが自動表示されます
+- 終了時にL1ルールFBが自動実行されます
+
+作業を始めるには:
+- 「情報集めて」「WBS作って」「リスクチェック」など、やりたいことを話しかけてください。
 ```
