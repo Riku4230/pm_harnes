@@ -2,8 +2,6 @@
 name: context-review
 description: Run steering loop. Apply harness improvements from IMPROVEMENTS/PROPOSALS.
 when_to_use: 「改善レビューして」「ハーネス改善」「context-review」
-persona: personas/pm-lead.md
-policy: policies/quality-policy.md
 permission_mode: full
 ---
 

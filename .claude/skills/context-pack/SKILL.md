@@ -3,8 +3,6 @@ name: context-pack
 description: Gather project info from Slack/Notion/sources.
 when_to_use: 「情報集めて」「Slack確認して」「今日の状況まとめて」「コンテキスト更新」
 allowed-tools: Read, Bash, mcp__*
-persona: personas/analyst.md
-policy: policies/quality-policy.md
 permission_mode: edit
 ---
 

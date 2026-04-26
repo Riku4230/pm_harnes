@@ -3,8 +3,6 @@ name: source-sync
 description: Fetch latest info from Slack/Notion/sources into daily digest. Schedulable.
 when_to_use: 「情報取ってきて」「Slack同期」「Notion同期」「ソース同期」「最新情報」
 allowed-tools: Read, Write, Bash, mcp__*
-persona: personas/analyst.md
-policy: policies/quality-policy.md
 permission_mode: edit
 ---
 

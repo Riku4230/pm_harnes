@@ -3,8 +3,6 @@ name: retro
 description: Retrospective + harness improvement. Analyze, learn, apply fixes.
 when_to_use: 「振り返りして」「レトロスペクティブ」「改善して」「今週の反省」
 allowed-tools: Read, Write, Edit
-persona: personas/pm-lead.md
-policy: policies/quality-policy.md
 permission_mode: full
 ---
 

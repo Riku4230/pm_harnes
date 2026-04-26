@@ -2,8 +2,6 @@
 name: cross-review
 description: Independent review via Codex or subagent.
 when_to_use: 「レビューして」「Codexに見てもらって」「セカンドオピニオン」
-persona: personas/reviewer.md
-policy: policies/quality-policy.md
 permission_mode: readonly
 ---
 

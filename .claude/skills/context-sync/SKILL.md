@@ -2,8 +2,6 @@
 name: context-sync
 description: Check docs/state/ consistency and freshness.
 when_to_use: 「ドキュメント同期して」「整合性チェック」「情報の鮮度確認」
-persona: personas/analyst.md
-policy: policies/quality-policy.md
 permission_mode: readonly
 ---
 

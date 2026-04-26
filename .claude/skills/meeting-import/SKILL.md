@@ -2,8 +2,6 @@
 name: meeting-import
 description: Transcription to minutes. Extract decisions and TODOs.
 when_to_use: 「議事録取り込んで」「この会議まとめて」「ミーティングメモ整理」
-persona: personas/analyst.md
-policy: policies/communication-policy.md
 permission_mode: edit
 ---
 
