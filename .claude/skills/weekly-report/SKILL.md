@@ -3,7 +3,8 @@ name: weekly-report
 description: Weekly report. Aggregate progress/decisions/risks. Schedulable.
 when_to_use: 「週報作って」「今週のまとめ」「ウィークリーレポート」「定例資料」
 allowed-tools: Read, Write
-permission_mode: edit---
+permission_mode: edit
+---
 
 # weekly-report
 
@@ -18,7 +19,7 @@ permission_mode: edit---
 〜5,000トークン
 
 ## Permission Mode
-**readonly** — レポート生成のみ。workspace/に保存。送信は人間が行う。
+**edit** — レポート生成のみ。workspace/に保存。送信は人間が行う。
 
 ## ワークフロー
 

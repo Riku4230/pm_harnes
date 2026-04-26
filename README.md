@@ -225,6 +225,7 @@ my-project/
 | スキル | やること | 権限 |
 |---|---|---|
 | setup | 初回セットアップ（ヒアリング→ファイル生成→Git→Schedule） | full |
+| source-sync | Slack/Notion等から情報取得（定期実行可） | edit |
 | context-pack | 情報収集・整理 | edit |
 | meeting-import | 議事録→決定事項+TODO | edit |
 | wbs-update | WBS進捗更新 | edit |
