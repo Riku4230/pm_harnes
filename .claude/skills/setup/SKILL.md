@@ -1,36 +1,56 @@
 ---
 name: setup
-description: Full project setup. Install harness, git init, schedule, and initial context.
-when_to_use: 「セットアップして」「プロジェクト始めたい」「setup」「初期設定」
+description: Install harness, git/GitHub init, configure schedules.
+when_to_use: 「セットアップして」「setup」「初期設定」「ハーネス導入」
 ---
 
 # setup
 
-PM-Harnessの初回セットアップを一括で行う。
-install.sh実行、git初期化、schedule設定、初期コンテキスト投入までを1つのフローで完了する。
+PM-Harnessの環境セットアップ。ファイル配置→Git/GitHub→Schedule設定の順で実行。
+プロジェクト内容のヒアリングはこのスキルでは行わない（project-initで行う）。
 
 ## ワークフロー
 
-### Step 1: プロジェクト情報ヒアリング
+### Step 1: プロジェクトタイプ確認
 
-以下をユーザーに確認:
-- **プロジェクト名** — state/STATUS.jsonのproject_nameに設定
-- **プロジェクトタイプ** — personal / consulting / system_dev
-  - 判断基準: 個人タスク→personal、クライアント案件→consulting、システム構築→system_dev
-- **ゴール** — docs/PROJECT.mdに記載
-- **関係者**（consulting/system_devのみ）— docs/STAKEHOLDER.mdに記載
-- **期限**（あれば）— state/WBS.jsonの初期マイルストーンに設定
+タイプだけ確認する（詳細ヒアリングはproject-initで行う）:
+- **personal** — 日常・個人タスク（最小構成）
+- **consulting** — コンサル・BPR・導入支援（フル構成）
+- **system_dev** — システム開発（フル + SPEC + BACKLOG）
 
-### Step 2: ファイル配置
-
-PM-Harnessのcore/からプロジェクトにファイルを配置する。
+### Step 2: Git初期化
 
 ```bash
-# install.shが同じディレクトリにある場合
-bash install.sh --target . --type {project_type}
+# gitリポジトリでなければ初期化
+git init
+```
 
-# install.shがない場合（pm-harnesリポジトリからの直接セットアップ）
-# 手動でcore/からコピー
+.gitignore を生成:
+```
+state/*.count
+node_modules/
+```
+
+### Step 3: GitHub連携
+
+ユーザーに確認してから実行。scheduleの実行にGitHubリモートが必要なため、先に設定する。
+
+```bash
+# gh CLIが使えるか確認
+gh auth status
+
+# ユーザーが希望する場合
+gh repo create {project_name} --private --source=. --push
+```
+
+GitHubなしでもPM-Harness自体は動作する。ただしschedule（Step 5）は使えない旨を伝える。
+
+### Step 4: ファイル配置
+
+PM-Harnessのcore/からプロジェクトにファイルを配置。
+
+```bash
+bash install.sh --target . --type {project_type}
 ```
 
 配置後の確認:
@@ -41,24 +61,17 @@ bash install.sh --target . --type {project_type}
 - state/ に初期JSONがあるか
 - docs/ にテンプレートがあるか
 
-### Step 3: Git初期化
-
+初回コミット:
 ```bash
-# gitリポジトリでなければ初期化
-git init
-
-# .gitignore 生成
-# state/CHANGELOG.json.count は追跡不要
+git add -A
+git commit -m "PM-Harness: initial setup ({project_type})"
+git push  # GitHub連携済みの場合
 ```
 
-**GitHub連携（オプション）**: ユーザーに確認してから実行。
+### Step 5: Schedule設定
 
-```bash
-# ユーザーが希望する場合のみ
-gh repo create {project_name} --private --source=. --push
-```
-
-### Step 4: Schedule設定
+**前提: GitHubリモートが設定済みであること。**
+未設定の場合はスキップし、後から設定可能と案内する。
 
 以下のscheduleをユーザーに提案。承認されたものだけ設定:
 
@@ -67,40 +80,19 @@ gh repo create {project_name} --private --source=. --push
 | **weekly-report** | 週次レポート生成 | 毎週金曜 16:00 |
 | **retro** | 振り返り | 毎週金曜 17:00 or 隔週 |
 
-提案時:
-「以下のscheduleを設定しますか？不要なものはスキップできます。」
-
 設定方法: Claude Codeの `/schedule` コマンドを使用。
 
-### Step 5: 初期コンテキスト投入
-
-Step 1でヒアリングした内容を各ファイルに記入:
-- state/STATUS.json: project_name, project_type, current_phase, last_updated
-- docs/PROJECT.md: ゴール、スコープ
-- docs/STAKEHOLDER.md: 関係者（consulting/system_devのみ）
-- state/WBS.json: 初期マイルストーン（あれば）
-
-### Step 6: 初回コミット + 確認
-
-```bash
-git add -A
-git commit -m "PM-Harness: project setup ({project_type})"
-```
-
-ユーザーに完了報告:
+### Step 6: 完了 → project-init案内
 
 ```
 PM-Harnessセットアップ完了！
 
-✅ ファイル配置: rules/hooks/skills/state/docs
-✅ Git初期化: {リポジトリ状況}
-✅ Schedule: {設定した内容 or "なし"}
-✅ 初期コンテキスト: STATUS.json, PROJECT.md
+✅ Git: {初期化済み / 既存}
+✅ GitHub: {連携済み / スキップ}
+✅ ファイル配置: rules/hooks/skills/state/docs ({project_type})
+✅ Schedule: {設定内容 / スキップ（GitHub未連携のため）}
 
-次のセッションから:
-- セッション開始時にプロジェクト状況が自動表示されます
-- セッション終了時にL1ルールFBが自動実行されます
-- {schedule設定があれば} 毎週金曜にweekly-report/retroが自動実行されます
-
-「情報集めて」「WBS作って」「リスクチェック」など、いつでも作業を始められます。
+次のステップ:
+  → project-init を実行してプロジェクト情報を入力してください。
+  「プロジェクト始めたい」と言えばOKです。
 ```
