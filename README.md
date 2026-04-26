@@ -298,26 +298,6 @@ bash install.sh --target ~/my-project --type system_dev
 
 ---
 
-## 設計根拠
-
-ハーネスエンジニアリングの主要文献をPM業務に翻訳した設計。
-
-| 出典 | 取り入れた要素 |
-|---|---|
-| Böckeler (Martin Fowler) | FF/FB設計、Ashbyの法則、トポロジー限定 |
-| Gota | 目的ファースト4ステップ、構造>指示 |
-| Osmani | 60行ルール、Success is silent |
-| Hashimoto | Failure-to-Rule変換 |
-| 加賀谷 (Asterminds) | Cross-Model Review、Self-improve、投資判断 |
-| 成瀬 (TAKT) | Faceted Prompting、Loop Monitor、Permission Modes |
-| Anthropic | JSON>MD、Selective Reading、hooks API |
-| すぅ (note) | CLAUDE.md司令塔、Slack集約、hooks改善蓄積 |
-| miyatti (ai-plc) | install.sh配布、タイプ別プリセット |
-
-詳細は [DESIGN.md](DESIGN.md) を参照。
-
----
-
 ## ライセンス
 
 MIT
