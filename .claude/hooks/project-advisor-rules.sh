@@ -1,7 +1,7 @@
 #!/bin/bash
 # L1: ルールベースプロジェクトFB（毎回、SessionEnd経由）
 set -e
-CWD="${CLAUDE_CWD:-.}"
+CWD="${CLAUDE_PROJECT_DIR:-.}"
 
 python3 -c "
 import json, os

@@ -2,7 +2,7 @@
 # PostToolUse(Edit|Write) で発火
 # state/*.jsonの変更のみ検査: 構文チェック + スキーマバリデーション
 set -e
-CWD="${CLAUDE_CWD:-.}"
+CWD="${CLAUDE_PROJECT_DIR:-.}"
 
 [ ! -d "$CWD/state" ] && exit 0
 
@@ -60,6 +60,9 @@ elif fname == 'WBS.json':
             task_names.add(t['name'])
         if t.get('status') and t['status'] not in valid_status:
             errors.append(f'{prefix}: status must be not_started/in_progress/done/blocked, got \"{t[\"status\"]}\"')
+        if t.get('start_date') and t.get('due'):
+            if t['start_date'] > t['due']:
+                errors.append(f'{prefix}: start_date ({t[\"start_date\"]}) > due ({t[\"due\"]})')
     # 依存関係の循環検出
     tasks = data.get('tasks', [])
     dep_map = {}
@@ -83,9 +86,6 @@ elif fname == 'WBS.json':
         if name not in visited:
             if has_cycle(name, visited, set()):
                 errors.append(f'WBS.json: dependency cycle detected involving \"{name}\"')
-        if t.get('start_date') and t.get('due'):
-            if t['start_date'] > t['due']:
-                errors.append(f'{prefix}: start_date ({t[\"start_date\"]}) > due ({t[\"due\"]})')
 
 elif fname == 'CHANGELOG.json':
     # append-only確認

@@ -72,7 +72,7 @@ with open(log_path, 'w') as f:
 
 # --- 2. L1: ルールベースFB（毎回） ---
 RULES_SCRIPT="$CWD/.claude/hooks/project-advisor-rules.sh"
-[ -f "$RULES_SCRIPT" ] && echo "$INPUT" | bash "$RULES_SCRIPT" 2>/dev/null || true
+[ -f "$RULES_SCRIPT" ] && CLAUDE_PROJECT_DIR="$CWD" bash "$RULES_SCRIPT" 2>/dev/null || true
 
 # --- 3. L2判定（24h経過チェック） ---
 LLM_HOURS=$(python3 -c "

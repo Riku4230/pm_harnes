@@ -4,7 +4,7 @@
 
 PM-Harnessは、PMの代わりに判断するのではなく、**進捗遅れ・リスク放置・意思決定の矛盾・共有漏れを自動検知し、PMの注意を重要箇所に向ける**制御システム。
 
-人間のPMOが定例会議でやっていることを、Claude Codeのhooks + Agent SDKで自動化した。
+人間のPMOが定例会議でやっていることを、Claude Codeのhooks + skillsで自動化した。
 
 ハーネスエンジニアリング（Böckeler / Osmani / Hashimoto等）の設計思想をPM業務に翻訳した、おそらく初の体系的実装。
 
@@ -37,7 +37,7 @@ hooks（session-start.sh）がセッション開始時にstate/を読み、**何
 
 ### ハーネスが自分で育つ
 
-ミスが発生 → IMPROVEMENTS.jsonに蓄積 → self-improve.tsが週次で分析 → 改善提案 → PMが承認 → ハーネスが改善される。
+ミスが発生 → IMPROVEMENTS.jsonに蓄積 → retroで週次分析 → 改善提案 → PMが承認 → ハーネスが改善される。
 
 ---
 
@@ -74,13 +74,10 @@ PM-Harness: ゴールは？
 PM-Harness: 関係者は？
 あなた: 「マーケ部の田中さん、デザイン会社のA社、経営企画の佐藤さん」
 
-PM-Harness: consulting タイプで設定します。よいですか？
-あなた: 「OK」
-
+→ 必要なファイルを判定して生成
 → Git初期化
 → GitHub連携（希望時）
-→ docs/state/ 生成（PROJECT.md, STAKEHOLDER.md, STATUS.json, WBS.json等）
-→ Schedule設定（weekly-report毎週金曜、retro毎週金曜）
+→ Schedule設定（source-sync毎日、weekly-report毎週金曜、retro毎週金曜）
 → 完了！
 ```
 
@@ -192,7 +189,7 @@ PM-Harnessの設計の中心軸。
 |---|---|---|
 | **①そもそもさせない** | 構造で間違いを不可能に | JSONスキーマ、allowed-tools、append-only |
 | **②やった後に検知** | 3層FBで危険信号を検出 | L1ルール(毎回) + L2 LLM(日次) + Cross-Model(任意) |
-| **③仕組み自体を改善** | ステアリングループ | IMPROVEMENTS蓄積 → self-improve → context-review |
+| **③仕組み自体を改善** | ステアリングループ | IMPROVEMENTS蓄積 → retro → ハーネス改善適用 |
 
 ### フォルダ構成
 
@@ -203,8 +200,6 @@ my-project/
 │   ├── rules/                ← PM判断原則（60行以下）
 │   ├── hooks/                ← 自動実行（セッション管理 + 3層FB）
 │   ├── skills/               ← PMワークフロー（12スキル）
-│   ├── personas/             ← 役割定義
-│   ├── policies/             ← ポリシー
 │   └── settings.json         ← hooks登録
 ├── docs/                     ← 人間向けドキュメント（Markdown）
 │   ├── PROJECT.md
@@ -230,12 +225,12 @@ my-project/
 | meeting-import | 議事録→決定事項+TODO | edit |
 | wbs-update | WBS進捗更新 | edit |
 | risk-check | リスク再評価 | edit |
-| draft-update | 下書き生成（送信不可） | **readonly** |
+| draft-update | 下書き生成（送信不可） | edit |
 | context-sync | ドキュメント整合性確認 | readonly |
 | context-review | ステアリング実行 | full |
 | cross-review | Cross-Modelレビュー | readonly |
 | retro | 振り返り（定期実行可） | readonly |
-| weekly-report | 週次レポート（定期実行可） | readonly |
+| weekly-report | 週次レポート（定期実行可） | edit |
 
 ### ファイル生成
 
