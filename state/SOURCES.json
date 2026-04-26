@@ -1,0 +1,4 @@
+{
+  "sources": [],
+  "_schema_hint": "Each source: {type(slack|notion|gdrive|other), name, id(channel_id/page_id/etc), description, added(YYYY-MM-DD)}"
+}

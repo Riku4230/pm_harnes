@@ -15,15 +15,18 @@
 | 議事録の参照 | meeting/YYYY-MM-DD_会議名.md |
 | 成果物の参照 | workspace/（下書き、レポート等） |
 | 改善レビュー | state/IMPROVEMENTS.json + state/SESSION_LOG.json |
+| 情報ソース設定 | state/SOURCES.json |
+| 外部ソースの最新情報 | sources/{type}/YYYY-MM-DD_{name}.md |
 
 ## フォルダ構成ルール
 
 | フォルダ | 用途 | ファイル命名規則 |
 |---|---|---|
 | docs/ | 人間向けドキュメント（外部共有可） | PROJECT.md, STAKEHOLDER.md, COMMUNICATION.md |
-| state/ | AI向け構造化データ（JSON） | STATUS.json, RISK.json, WBS.json 等 |
+| state/ | AI向け構造化データ（JSON） | STATUS.json, RISK.json, WBS.json, SOURCES.json 等 |
 | meeting/ | 議事録 | YYYY-MM-DD_会議名.md |
 | workspace/ | 作業成果物（下書き、レポート） | スキル名-YYYY-MM-DD.md（例: weekly-report-2026-04-25.md） |
+| sources/ | 外部ソースから取得した情報の蓄積 | sources/{slack\|notion\|other}/YYYY-MM-DD_{name}.md |
 
 ## CHANGELOG.jsonエントリフォーマット
 
