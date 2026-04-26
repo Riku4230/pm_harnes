@@ -47,8 +47,11 @@ try:
         lines.append(" / ".join(parts))
         if s.get("current_task"):
             lines.append(f"  doing: {s['current_task']}")
-        if s.get("next_actions"):
-            lines.append(f"  next: {', '.join(str(a) for a in s['next_actions'][:3])}")
+        na = s.get("next_actions", [])
+        if na:
+            lines.append(f"  TODO({len(na)}):")
+            for a in na[:5]:
+                lines.append(f"    - {a}")
 except:
     lines.append("PM-Harness: status error")
 
@@ -77,9 +80,13 @@ try:
             else:
                 warn.append(label)
     if high:
-        lines.append(f"  RISK({len(high)}): " + " / ".join(high[:3]))
+        lines.append(f"  RISK({len(high)}):")
+        for h in high[:3]:
+            lines.append(f"    {h}")
     if warn:
-        lines.append(f"  NOTE({len(warn)}): " + " / ".join(warn[:3]))
+        lines.append(f"  NOTE({len(warn)}):")
+        for w in warn[:3]:
+            lines.append(f"    {w}")
 except:
     pass
 
