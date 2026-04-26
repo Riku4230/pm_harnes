@@ -16,7 +16,7 @@
 | 成果物の参照 | workspace/（下書き、レポート等） |
 | 改善レビュー | state/IMPROVEMENTS.json + state/SESSION_LOG.json |
 | 情報ソース設定 | state/SOURCES.json |
-| 外部ソースの最新情報 | sources/{type}/YYYY-MM-DD_{name}.md |
+| 外部ソースの最新情報 | sources/YYYY-MM-DD.md |
 
 ## フォルダ構成ルール
 
