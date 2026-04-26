@@ -2,6 +2,9 @@
 name: context-sync
 description: docs/とstate/の整合性確認、鮮度チェック、矛盾検出。
 when_to_use: 「ドキュメント同期して」「整合性チェック」「情報の鮮度確認」
+persona: personas/analyst.md
+policy: policies/quality-policy.md
+permission_mode: readonly
 ---
 
 # context-sync

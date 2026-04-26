@@ -2,6 +2,9 @@
 name: risk-check
 description: リスクの再評価、新規リスク検出、対応策の確認。
 when_to_use: 「リスクチェックして」「リスク確認」「リスク評価」
+persona: personas/analyst.md
+policy: policies/risk-policy.md
+permission_mode: edit
 ---
 
 # risk-check

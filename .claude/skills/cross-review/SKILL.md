@@ -2,6 +2,9 @@
 name: cross-review
 description: Cross-Model Review。Codex CLIまたはClaude subagentで成果物の独立レビュー。
 when_to_use: 「レビューして」「Codexに見てもらって」「セカンドオピニオン」
+persona: personas/reviewer.md
+policy: policies/quality-policy.md
+permission_mode: readonly
 ---
 
 # cross-review

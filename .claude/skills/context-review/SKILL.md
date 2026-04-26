@@ -2,6 +2,9 @@
 name: context-review
 description: ステアリングループ実行。IMPROVEMENTS/REVIEW_PROPOSALSを基にハーネスを改善。
 when_to_use: 「改善レビューして」「ハーネス改善」「context-review」
+persona: personas/pm-lead.md
+policy: policies/quality-policy.md
+permission_mode: full
 ---
 
 # context-review
