@@ -1,9 +1,8 @@
 #!/bin/bash
 # SessionStart で発火
-# STATUS.json要約 + ALERTS.json表示 + Bootstrap Check
+# git pull → 差分表示 → STATUS要約 → ALERTS → PROPOSALS → workspace新着
 set -e
 
-# CLAUDE_PROJECT_DIRまたはカレントディレクトリ
 CWD="${CLAUDE_PROJECT_DIR:-.}"
 
 # --- Bootstrap Check ---
@@ -17,6 +16,59 @@ if [ ! -f "$CWD/state/STATUS.json" ]; then
   echo "## PM-Harness: STATUS.json not found"
   echo "Run setup skill to initialize project state."
   exit 0
+fi
+
+# --- Git Pull + Schedule更新の差分表示 ---
+cd "$CWD"
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  # リモートがあればpull
+  if git remote get-url origin > /dev/null 2>&1; then
+    BEFORE=$(git rev-parse HEAD 2>/dev/null || echo "")
+    git pull --ff-only origin main > /dev/null 2>&1 || true
+    AFTER=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+    if [ -n "$BEFORE" ] && [ -n "$AFTER" ] && [ "$BEFORE" != "$AFTER" ]; then
+      # scheduleによる更新があった
+      COMMIT_COUNT=$(git rev-list --count "$BEFORE".."$AFTER" 2>/dev/null || echo "0")
+      echo "## Updates since last session ($COMMIT_COUNT commits)"
+      echo ""
+
+      # 変更されたファイルを表示
+      CHANGED=$(git diff --name-only "$BEFORE".."$AFTER" 2>/dev/null || echo "")
+      if [ -n "$CHANGED" ]; then
+        # sources/の新着
+        SOURCES_NEW=$(echo "$CHANGED" | grep "^sources/" || true)
+        if [ -n "$SOURCES_NEW" ]; then
+          SOURCE_COUNT=$(echo "$SOURCES_NEW" | wc -l | tr -d ' ')
+          echo "📥 source-sync: ${SOURCE_COUNT}件の新しい情報"
+          echo "$SOURCES_NEW" | head -5 | while read f; do echo "  - $f"; done
+          [ "$SOURCE_COUNT" -gt 5 ] && echo "  ... and $(($SOURCE_COUNT - 5)) more"
+          echo ""
+        fi
+
+        # workspace/の新着（weekly-report, retro等）
+        WORKSPACE_NEW=$(echo "$CHANGED" | grep "^workspace/" || true)
+        if [ -n "$WORKSPACE_NEW" ]; then
+          echo "📝 新しいレポート:"
+          echo "$WORKSPACE_NEW" | while read f; do echo "  - $f"; done
+          echo ""
+        fi
+
+        # state/の更新
+        STATE_UPDATED=$(echo "$CHANGED" | grep "^state/" || true)
+        if [ -n "$STATE_UPDATED" ]; then
+          echo "🔄 state更新:"
+          echo "$STATE_UPDATED" | while read f; do echo "  - $f"; done
+          echo ""
+        fi
+
+        # コミットメッセージ
+        echo "コミット履歴:"
+        git log --oneline "$BEFORE".."$AFTER" 2>/dev/null | head -5
+        echo ""
+      fi
+    fi
+  fi
 fi
 
 # --- STATUS.json要約 ---
@@ -92,18 +144,8 @@ try:
     if props:
         print()
         print(f'## Harness Proposals ({len(props)}件)')
-        print('context-reviewを実行して適用してください')
+        print('retroを実行して適用してください')
 except:
     pass
 " 2>/dev/null || true
-fi
-
-# --- 新しいworkspace/ファイルの通知 ---
-if [ -d "$CWD/workspace" ]; then
-  NEW_FILES=$(find "$CWD/workspace" -type f -mtime -1 2>/dev/null | head -5)
-  if [ -n "$NEW_FILES" ]; then
-    echo ""
-    echo "## Recent workspace files (24h)"
-    echo "$NEW_FILES" | while read f; do echo "  $(basename "$f")"; done
-  fi
 fi

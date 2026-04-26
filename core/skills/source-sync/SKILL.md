@@ -145,7 +145,17 @@ source-sync完了:
   - SOURCES.jsonに登録された全ソースから取得
   - sources/に蓄積
   - コンテキスト更新提案はstate/ALERTS.jsonに記録
-  - 次回session-start時に「N件の新情報、N件の更新提案」として表示
+  - 成果物をcommit + push（次回session-startでpullされる）
+  - 次回session-start時に「N件の新情報」として差分表示
+```
+
+### Schedule実行時のcommit+push
+
+schedule実行（手動実行でも同様）の最後に必ず:
+```bash
+git add sources/ state/ALERTS.json
+git commit -m "source-sync: {date} ({N}件取得)"
+git push origin main
 ```
 
 ### 古いsources/の管理

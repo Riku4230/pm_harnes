@@ -90,6 +90,29 @@ workspace/retro-{date}.mdに生成:
 ### /schedule対応
 ```
 /schedule で定期実行可能。
-schedule実行時: Phase 1-2（分析+レポート）のみ。Phase 3はスキップ。
-手動実行時: Phase 1-4（分析+レポート+改善適用+クリーンアップ）全実行。
+schedule実行時: Phase 1-2（分析+レポート）→ mainにcommit+push。
+手動実行時: Phase 1-4全実行。Phase 3でハーネス変更がある場合は別ブランチ+PR。
+```
+
+### Git運用ルール
+
+**mainに直接push（低リスク）:**
+- sources/への情報蓄積（source-sync）
+- workspace/へのレポート保存（weekly-report, retro Phase 1-2）
+- state/のデータ更新（ALERTS, SESSION_LOG等）
+
+**別ブランチ + PR（高リスク）:**
+- .claude/rules/の変更（anti-patterns追加・剪定）
+- .claude/policies/の変更
+- .claude/skills/のSKILL.md変更
+
+retro手動実行でPhase 3（ハーネス改善）がある場合:
+```bash
+git checkout -b retro/YYYY-MM-DD
+# 改善を適用
+git add .claude/
+git commit -m "retro: ハーネス改善 ({改善内容})"
+git push origin retro/YYYY-MM-DD
+gh pr create --title "retro: ハーネス改善" --body "{改善内容の説明}"
+gh pr merge --auto
 ```

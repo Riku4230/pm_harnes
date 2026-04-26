@@ -79,3 +79,12 @@ workspace/weekly-report-{date}.mdに生成:
 生成されたレポートはworkspace/に保存。
 PMが確認・編集後にステークホルダーへ共有。
 ```
+
+### Schedule実行時のcommit+push
+
+schedule実行の最後に必ず:
+```bash
+git add workspace/ state/
+git commit -m "weekly-report: {date}"
+git push origin main
+```
