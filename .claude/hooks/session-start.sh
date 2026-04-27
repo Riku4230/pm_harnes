@@ -247,5 +247,9 @@ except:
     pass
 
 msg = "\n".join(lines)
-print(json.dumps({"systemMessage": msg}))
+# Claude Code: systemMessage JSON / Codex: plain text (→ additionalContext)
+if os.environ.get("CLAUDE_PROJECT_DIR"):
+    print(json.dumps({"systemMessage": msg}))
+else:
+    print(msg)
 PYEOF
