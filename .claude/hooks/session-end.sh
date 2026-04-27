@@ -1,6 +1,6 @@
 #!/bin/bash
 # SessionEnd で発火（セッション終了時のみ、1回/セッション）
-# 1. transcript解析→SESSION_LOG充実  2. L1ルールFB  3. L2/L3起動判定
+# 1. transcript解析→SESSION_LOG充実  2. L1ルールFB  3. L2/L3判定表示
 set -e
 
 # stdinからセッション情報を取得
@@ -43,29 +43,24 @@ if transcript and os.path.exists(transcript):
             for line in f:
                 try:
                     obj = json.loads(line.strip())
-                    # スキル使用の検出
                     msg = obj.get('message', {})
                     content = msg.get('content', '')
                     if isinstance(content, str):
-                        for skill in ['setup','context-pack','meeting-import','wbs-update',
-                                      'risk-check','draft-update','context-sync','context-review',
-                                      'cross-review','retro','weekly-report','decompose',
-                                      'source-sync','weekly-report']:
+                        for skill in ['setup','source-sync','meeting-import','wbs-update',
+                                      'risk-check','draft-update','doc-check','context-review',
+                                      'cross-review','retro','weekly-report','decompose']:
                             if f'/{skill}' in content or f'skill: \"{skill}\"' in content.lower():
                                 skills.add(skill)
-                    # contentがlistの場合（tool_use等）
                     if isinstance(content, list):
                         for block in content:
                             if isinstance(block, dict):
                                 text = block.get('text', '')
                                 if isinstance(text, str):
-                                    for skill in ['setup','context-pack','meeting-import','wbs-update',
-                                                  'risk-check','draft-update','context-sync','context-review',
-                                                  'cross-review','retro','weekly-report','decompose',
-                                                  'source-sync','weekly-report']:
+                                    for skill in ['setup','source-sync','meeting-import','wbs-update',
+                                                  'risk-check','draft-update','doc-check','context-review',
+                                                  'cross-review','retro','weekly-report','decompose']:
                                         if f'/{skill}' in text:
                                             skills.add(skill)
-                    # ファイル編集の検出
                     if isinstance(content, list):
                         for block in content:
                             if isinstance(block, dict) and block.get('type') == 'tool_use':
@@ -75,7 +70,6 @@ if transcript and os.path.exists(transcript):
                                     fp = inp.get('file_path', '')
                                     if fp and ('/state/' in fp or '/docs/' in fp or '/meeting/' in fp or '/workspace/' in fp):
                                         files.add(os.path.basename(fp))
-                    # tool_resultからの検出
                     tool_use = obj.get('tool_use', {})
                     if tool_use.get('name') in ('Edit', 'Write'):
                         fp = tool_use.get('input', {}).get('file_path', '')
@@ -88,9 +82,20 @@ if transcript and os.path.exists(transcript):
     except:
         pass
 
+# CHANGELOG.jsonから当日の決定事項を抽出
+cl_path = os.path.join(cwd, 'state/CHANGELOG.json')
+if os.path.exists(cl_path):
+    try:
+        today = datetime.date.today().isoformat()
+        entries = json.load(open(cl_path)).get('entries', [])
+        for e in entries:
+            if e.get('date') == today and e.get('type') == 'decision':
+                entry['decisions'].append(e.get('description', ''))
+    except:
+        pass
+
 log['sessions'].append(entry)
 
-# ローテーション: 最新50件
 if len(log['sessions']) > 50:
     log['sessions'] = log['sessions'][-50:]
 
@@ -102,7 +107,7 @@ with open(log_path, 'w') as f:
 RULES_SCRIPT="$CWD/.claude/hooks/project-advisor-rules.sh"
 [ -f "$RULES_SCRIPT" ] && CLAUDE_PROJECT_DIR="$CWD" bash "$RULES_SCRIPT" 2>/dev/null || true
 
-# --- 3. L2判定（24h経過チェック） ---
+# --- 3. L2判定（表示のみ、実行はstop-advisor.sh） ---
 LLM_HOURS=$(python3 -c "
 import json, os
 from datetime import datetime
@@ -122,7 +127,7 @@ if [ "$LLM_HOURS" -ge 24 ]; then
   echo "PM-Harness: L2 LLM FB due (${LLM_HOURS}h since last check)" > /dev/null
 fi
 
-# --- 4. L3判定（IMPROVEMENTS件数チェック） ---
+# --- 4. L3判定（表示のみ） ---
 ITEMS=$(python3 -c "
 import json, os
 f = os.path.join('$CWD', 'state/IMPROVEMENTS.json')

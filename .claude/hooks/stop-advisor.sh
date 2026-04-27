@@ -22,6 +22,9 @@ print(s.get('project_name', ''))
 " 2>/dev/null || echo "")
 [ -z "$PROJECT_NAME" ] && exit 0
 
+LOCK_DIR="$CWD/state/.locks"
+mkdir -p "$LOCK_DIR"
+
 # --- L2: LLMプロジェクトFB（6h経過時のみ） ---
 LLM_HOURS=$(python3 -c "
 import json, os
@@ -38,9 +41,12 @@ else:
     print(999)
 " 2>/dev/null || echo "999")
 
-if [ "$LLM_HOURS" -ge 6 ]; then
+L2_LOCK="$LOCK_DIR/l2.lock"
+if [ "$LLM_HOURS" -ge 6 ] && ! [ -f "$L2_LOCK" ]; then
+  echo $$ > "$L2_LOCK"
   cd "$CWD"
-  nohup claude -p "あなたはプロジェクトアドバイザー。以下のファイルを読んで危険信号を検出してください。
+  (
+    nohup claude -p "あなたはプロジェクトアドバイザー。以下のファイルを読んで危険信号を検出してください。
 
 読むファイル:
 1. state/STATUS.json
@@ -59,9 +65,11 @@ if [ "$LLM_HOURS" -ge 6 ]; then
 llm_checkedフィールドも現在時刻ISO8601で更新。
 既存のrule_alerts/rule_checked/displayed_llm_checkedは変更しない。
 高確信のものだけ。" \
-    --allowed-tools "Read,Write" \
-    --model sonnet \
-    > /dev/null 2>&1 &
+      --allowed-tools "Read,Write" \
+      --model sonnet \
+      > /dev/null 2>&1
+    rm -f "$L2_LOCK"
+  ) &
 fi
 
 # --- L3: ハーネス自己改善（10件+3日 or 20件強制） ---
@@ -86,9 +94,12 @@ else:
     print(999)
 " 2>/dev/null || echo "999")
 
-if [ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ]); then
+L3_LOCK="$LOCK_DIR/l3.lock"
+if ([ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ])) && ! [ -f "$L3_LOCK" ]; then
+  echo $$ > "$L3_LOCK"
   cd "$CWD"
-  nohup claude -p "あなたはハーネスエンジニア。PM-Harnessの改善提案を行ってください。
+  (
+    nohup claude -p "あなたはハーネスエンジニア。PM-Harnessの改善提案を行ってください。
 
 読むファイル:
 1. state/IMPROVEMENTS.json
@@ -107,9 +118,11 @@ if [ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ]); then
 last_runフィールドも現在時刻ISO8601で更新。
 既存のdisplayed_last_runは変更しない。
 rules/やskills/を直接書き換えてはいけない。" \
-    --allowed-tools "Read,Write" \
-    --model sonnet \
-    > /dev/null 2>&1 &
+      --allowed-tools "Read,Write" \
+      --model sonnet \
+      > /dev/null 2>&1
+    rm -f "$L3_LOCK"
+  ) &
 fi
 
 exit 0

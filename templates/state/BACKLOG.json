@@ -1,3 +1,14 @@
 {
+  "_schema_hint": {
+    "items[]": {
+      "id": "B001",
+      "title": "string (required)",
+      "description": "string",
+      "priority": "high|medium|low",
+      "status": "open|in_progress|done",
+      "created": "YYYY-MM-DD",
+      "source": "meeting|retro|manual"
+    }
+  },
   "items": []
 }

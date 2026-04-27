@@ -1,4 +1,13 @@
 {
+  "_schema_hint": {
+    "proposals[]": {
+      "category": "schema|sensor|skill|rule",
+      "title": "string (required)",
+      "summary": "string",
+      "recommendation": "string",
+      "impact": "high|medium|low"
+    }
+  },
   "proposals": [],
   "last_run": null,
   "displayed_last_run": null

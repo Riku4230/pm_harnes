@@ -1,3 +1,14 @@
 {
+  "_schema_hint": {
+    "items[]": {
+      "id": "IMP001",
+      "description": "string (required)",
+      "category": "process|communication|tooling|detection",
+      "severity": "high|medium|low",
+      "created": "YYYY-MM-DD",
+      "source": "retro|session|manual",
+      "status": "open|resolved"
+    }
+  },
   "items": []
 }
