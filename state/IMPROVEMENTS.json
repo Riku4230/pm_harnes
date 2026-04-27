@@ -1,3 +1,13 @@
 {
-  "items": []
+  "items": [
+    {
+      "id": "IMP001",
+      "description": "Codex CLI v0.125.0 のinteractiveモードでhooksが発火しない（SessionStart/PreToolUse等すべて）。codex_hooks feature flagはstable:trueだがグローバル/プロジェクトどちらのhooks.json/config.tomlでも動作せず。issue #17532関連。hooks対応完了後に再テスト。",
+      "category": "tooling",
+      "severity": "high",
+      "created": "2026-04-27",
+      "source": "manual",
+      "status": "open"
+    }
+  ]
 }
