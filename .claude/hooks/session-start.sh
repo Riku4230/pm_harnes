@@ -143,7 +143,7 @@ try:
                 elif isinstance(q, dict) and not q.get("resolved"):
                     oq.append(q.get("question", str(q)))
             if oq:
-                lines.append(f"  Q({len(oq)}):")
+                lines.append(f"  OpenQuestion({len(oq)}):")
                 for q in oq[:3]:
                     lines.append(f"    - {q}")
         except:
