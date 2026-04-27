@@ -1,18 +1,20 @@
 ---
-name: context-sync
+name: doc-check
 description: Check docs/state/ consistency and freshness.
-when_to_use: 「ドキュメント同期して」「整合性チェック」「情報の鮮度確認」
+when_to_use: 「ドキュメント確認して」「整合性チェック」「情報の鮮度確認」「ドキュメント同期して」「doc-check」
 permission_mode: readonly
 ---
 
-# context-sync
+# doc-check
+
+docs/とstate/のメタデータを比較し、鮮度と矛盾を検出する。
 
 ## Required Context
-- docs/ 全ファイルのメタデータ（ファイル名+更新日のみ。全文は読まない）
+- docs/ 全ファイルのメタデータ（ファイル名+更新日のみ）
 - state/STATUS.json
 
 ## Token Budget
-〜2,000トークン（メタデータのみ。詳細は段階的に読む）
+〜2,000トークン
 
 ## ワークフロー
 
@@ -26,10 +28,6 @@ docs/とstate/の各ファイルの更新日を確認。
 古いファイルや疑わしいファイルのみ全文Readして:
 - docs/間の矛盾
 - docs/ ↔ state/の不一致
-
-### FB-Computational
-- [Warn] 最終更新30日超のファイル
-- [Log] IMPROVEMENTS.json 10件超 → 「context-reviewを実行してください」
 
 ### Post
 - 修正提案をユーザーに提示（自動修正はしない）

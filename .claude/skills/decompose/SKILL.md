@@ -1,7 +1,7 @@
 ---
 name: decompose
 description: Break down WBS tasks into subtasks with dependencies.
-when_to_use: 「タスク分解して」「詳細化して」「decompose」「サブタスク作って」
+when_to_use: 「タスク分解して」「詳細化して」「decompose」「サブタスク作って」「もっと細かく」「精緻に」「粒度を細かく」「タスクを見直して」「タスクをもうちょっと精緻に」
 permission_mode: edit
 ---
 
@@ -48,7 +48,8 @@ T001: 物件探し・内見 (〜05-10)
   T001-4: 物件決定 (〜05-10) ← T001-3
 ```
 
-### Step 4: WBS.json更新 + 依存チェック
+### Step 4: WBS.json更新
 
-書き込み後、全体の依存関係に循環がないか確認。
-期日整合性も確認（依存先due < 依存元due）。
+WBS.jsonに書き込む。
+**循環検出・期日整合性・Impact AnalysisはPostToolUse hook (validate-state.sh) が自動実行する。スキル内で独自チェックしないこと。**
+hookからエラーが返った場合はその指摘に従って修正する。

@@ -3,7 +3,13 @@
 # L2 LLMプロジェクトFB + L3ハーネス改善の起動判定
 set -e
 
-CWD="${CLAUDE_PROJECT_DIR:-.}"
+INPUT=$(cat)
+
+# 循環防止: stop_hook_activeなら即終了
+IS_ACTIVE=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('stop_hook_active',False))" 2>/dev/null || echo "False")
+[ "$IS_ACTIVE" = "True" ] && exit 0
+
+CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd','.'))" 2>/dev/null || echo "${CLAUDE_PROJECT_DIR:-.}")
 
 [ ! -d "$CWD/state" ] && exit 0
 [ ! -f "$CWD/state/STATUS.json" ] && exit 0

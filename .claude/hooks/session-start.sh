@@ -54,36 +54,78 @@ try:
         if s.get("current_task"):
             lines.append(f"  doing: {s['current_task']}")
 
-        # WBSからTODO + 期限超過（サブタスク対応）
+        # WBSからTODO（親子+依存関係表示）
         try:
             wbs = json.load(open(os.path.join(cwd, "state/WBS.json")))
-            # サブタスクを含む全タスクをフラット化
-            all_tasks = []
-            for t in wbs.get("tasks", []):
-                subs = t.get("subtasks", [])
-                if subs:
-                    for st in subs:
-                        if st.get("status") != "done":
-                            st["_parent"] = t.get("name", "")
-                            all_tasks.append(st)
-                elif t.get("status") != "done":
-                    all_tasks.append(t)
-            all_tasks.sort(key=lambda t: t.get("due", "9999-12-31"))
+            tasks = wbs.get("tasks", [])
+            task_by_name = {t["name"]: t for t in tasks if t.get("name")}
 
-            overdue = [t for t in all_tasks if t.get("due") and t["due"] < today]
-            upcoming = [t for t in all_tasks if not (t.get("due") and t["due"] < today)]
+            overdue_parent = []
+            active_parent = []
+            for t in tasks:
+                if t.get("status") == "done":
+                    continue
+                if t.get("due") and t["due"] < today:
+                    overdue_parent.append(t)
+                else:
+                    active_parent.append(t)
 
-            if overdue:
-                lines.append(f"  OVERDUE({len(overdue)}):")
-                for t in overdue[:3]:
+            overdue_parent.sort(key=lambda t: t.get("due", "9999-12-31"))
+            active_parent.sort(key=lambda t: t.get("due", "9999-12-31"))
+
+            if overdue_parent:
+                lines.append(f"  OVERDUE({len(overdue_parent)}):")
+                for t in overdue_parent[:3]:
                     days = (datetime.now() - datetime.strptime(t["due"], "%Y-%m-%d")).days
-                    lines.append(f"    - {t.get('name')} ({t['due']}) +{days}日超過")
+                    deps_str = ""
+                    if t.get("dependencies"):
+                        deps_str = " <- " + ", ".join(t["dependencies"])
+                    lines.append(f"    - {t['name']} ({t['due']}) +{days}d{deps_str}")
 
-            if upcoming:
-                lines.append(f"  TODO({len(upcoming)}):")
-                for t in upcoming[:5]:
+            if active_parent:
+                # 未完了の親タスク数を表示
+                total_subs = sum(len([st for st in t.get("subtasks", []) if st.get("status") != "done"]) for t in active_parent)
+                count_label = f"{len(active_parent)}tasks"
+                if total_subs:
+                    count_label += f", {total_subs}subs"
+                lines.append(f"  TODO({count_label}):")
+
+                for t in active_parent[:5]:
+                    start = t.get("start_date", "")
                     due = t.get("due", "")
-                    lines.append(f"    - {t.get('name')} ({due})" if due else f"    - {t.get('name')}")
+                    period = ""
+                    if start and due:
+                        period = f" ({start[5:]}-{due[5:]})"
+                    elif due:
+                        period = f" (~{due[5:]})"
+
+                    # 依存関係
+                    deps_str = ""
+                    if t.get("dependencies"):
+                        dep_statuses = []
+                        for d in t["dependencies"]:
+                            dep_t = task_by_name.get(d, {})
+                            st = dep_t.get("status", "?")
+                            mark = "x" if st == "done" else "o" if st == "in_progress" else "."
+                            dep_statuses.append(f"{mark}{d}")
+                        deps_str = " <- " + ", ".join(dep_statuses)
+
+                    status_mark = {"in_progress": "*", "blocked": "!", "not_started": " "}.get(t.get("status", ""), " ")
+                    lines.append(f"   [{status_mark}] {t['name']}{period}{deps_str}")
+
+                    # サブタスク（最大3件）
+                    subs = [st for st in t.get("subtasks", []) if st.get("status") != "done"]
+                    subs.sort(key=lambda x: x.get("due", "9999-12-31"))
+                    for sub in subs[:3]:
+                        sub_due = sub.get("due", "")
+                        sub_dep = ""
+                        if sub.get("depends_on"):
+                            sub_dep = " <- " + ", ".join(sub["depends_on"])
+                        sub_mark = {"in_progress": "*", "blocked": "!", "not_started": " "}.get(sub.get("status", ""), " ")
+                        lines.append(f"      [{sub_mark}] {sub.get('name', '')} ({sub_due}){sub_dep}")
+                    if len(subs) > 3:
+                        lines.append(f"       ... +{len(subs)-3}more")
+
         except:
             na = s.get("next_actions", [])
             if na:
@@ -92,20 +134,20 @@ try:
                     lines.append(f"    - {a}")
 
         # Open Questions
-        oq = [q for q in s.get("open_questions", []) if not q.get("resolved")]
-        if oq:
-            lines.append(f"  Q({len(oq)}):")
-            for q in oq[:3]:
-                qtext = q.get("question", "")
-                created = q.get("created", "")
-                if created:
-                    try:
-                        days = (datetime.now() - datetime.strptime(created, "%Y-%m-%d")).days
-                        lines.append(f"    - {qtext} ({days}日)")
-                    except:
-                        lines.append(f"    - {qtext}")
-                else:
-                    lines.append(f"    - {qtext}")
+        try:
+            raw_oq = s.get("open_questions", [])
+            oq = []
+            for q in raw_oq:
+                if isinstance(q, str):
+                    oq.append(q)
+                elif isinstance(q, dict) and not q.get("resolved"):
+                    oq.append(q.get("question", str(q)))
+            if oq:
+                lines.append(f"  Q({len(oq)}):")
+                for q in oq[:3]:
+                    lines.append(f"    - {q}")
+        except:
+            pass
 
 except:
     lines.append("PM-Harness: status error")
