@@ -1,4 +1,4 @@
 {
   "tasks": [],
-  "_schema_hint": "Each task: {name(required), status(required: not_started|in_progress|done|blocked), owner, due(YYYY-MM-DD), start_date(YYYY-MM-DD), dependencies([task_name]), description}"
+  "_schema_hint": "Each task: {id(T001), name(required), status(not_started|in_progress|done|blocked), owner, due(YYYY-MM-DD), depends_on([id]), subtasks([{id,name,status,due,depends_on}])}"
 }

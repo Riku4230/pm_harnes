@@ -54,14 +54,24 @@ try:
         if s.get("current_task"):
             lines.append(f"  doing: {s['current_task']}")
 
-        # WBSからTODO + 期限超過
+        # WBSからTODO + 期限超過（サブタスク対応）
         try:
             wbs = json.load(open(os.path.join(cwd, "state/WBS.json")))
-            tasks = [t for t in wbs.get("tasks", []) if t.get("status") != "done"]
-            tasks.sort(key=lambda t: t.get("due", "9999-12-31"))
+            # サブタスクを含む全タスクをフラット化
+            all_tasks = []
+            for t in wbs.get("tasks", []):
+                subs = t.get("subtasks", [])
+                if subs:
+                    for st in subs:
+                        if st.get("status") != "done":
+                            st["_parent"] = t.get("name", "")
+                            all_tasks.append(st)
+                elif t.get("status") != "done":
+                    all_tasks.append(t)
+            all_tasks.sort(key=lambda t: t.get("due", "9999-12-31"))
 
-            overdue = [t for t in tasks if t.get("due") and t["due"] < today]
-            upcoming = [t for t in tasks if not (t.get("due") and t["due"] < today)]
+            overdue = [t for t in all_tasks if t.get("due") and t["due"] < today]
+            upcoming = [t for t in all_tasks if not (t.get("due") and t["due"] < today)]
 
             if overdue:
                 lines.append(f"  OVERDUE({len(overdue)}):")
