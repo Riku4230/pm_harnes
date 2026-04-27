@@ -83,48 +83,32 @@ try:
                     lines.append(f"    - {t['name']} ({t['due']}) +{days}d{deps_str}")
 
             if active_parent:
-                # 未完了の親タスク数を表示
-                total_subs = sum(len([st for st in t.get("subtasks", []) if st.get("status") != "done"]) for t in active_parent)
-                count_label = f"{len(active_parent)}tasks"
-                if total_subs:
-                    count_label += f", {total_subs}subs"
-                lines.append(f"  TODO({count_label}):")
+                lines.append(f"  TODO({len(active_parent)}):")
 
                 for t in active_parent[:5]:
-                    start = t.get("start_date", "")
                     due = t.get("due", "")
-                    period = ""
-                    if start and due:
-                        period = f" ({start[5:]}-{due[5:]})"
-                    elif due:
-                        period = f" (~{due[5:]})"
+                    due_str = f" (~{due[5:]})" if due else ""
 
-                    # 依存関係
                     deps_str = ""
                     if t.get("dependencies"):
-                        dep_statuses = []
-                        for d in t["dependencies"]:
-                            dep_t = task_by_name.get(d, {})
-                            st = dep_t.get("status", "?")
-                            mark = "x" if st == "done" else "o" if st == "in_progress" else "."
-                            dep_statuses.append(f"{mark}{d}")
-                        deps_str = " <- " + ", ".join(dep_statuses)
+                        deps_str = " <- " + ", ".join(t["dependencies"])
 
                     status_mark = {"in_progress": "*", "blocked": "!", "not_started": " "}.get(t.get("status", ""), " ")
-                    lines.append(f"   [{status_mark}] {t['name']}{period}{deps_str}")
+                    lines.append(f"   [{status_mark}] {t['name']}{due_str}{deps_str}")
 
-                    # サブタスク（最大3件）
-                    subs = [st for st in t.get("subtasks", []) if st.get("status") != "done"]
-                    subs.sort(key=lambda x: x.get("due", "9999-12-31"))
-                    for sub in subs[:3]:
-                        sub_due = sub.get("due", "")
-                        sub_dep = ""
-                        if sub.get("depends_on"):
-                            sub_dep = " <- " + ", ".join(sub["depends_on"])
-                        sub_mark = {"in_progress": "*", "blocked": "!", "not_started": " "}.get(sub.get("status", ""), " ")
-                        lines.append(f"      [{sub_mark}] {sub.get('name', '')} ({sub_due}){sub_dep}")
-                    if len(subs) > 3:
-                        lines.append(f"       ... +{len(subs)-3}more")
+                    # サブタスク展開: 進行中 or 依存が全完了の次タスク
+                    deps_all_done = all(task_by_name.get(d, {}).get("status") == "done" for d in t.get("dependencies", []))
+                    if t.get("status") == "in_progress" or (t.get("status") == "not_started" and deps_all_done):
+                        subs = [st for st in t.get("subtasks", []) if st.get("status") != "done"]
+                        subs.sort(key=lambda x: x.get("due", "9999-12-31"))
+                        for sub in subs[:3]:
+                            sub_due = sub.get("due", "")
+                            sub_mark = {"in_progress": "*", "blocked": "!", "not_started": " "}.get(sub.get("status", ""), " ")
+                            lines.append(f"      [{sub_mark}] {sub.get('name', '')} ({sub_due})")
+                        if len(subs) > 3:
+                            lines.append(f"       +{len(subs)-3}more")
+                if len(active_parent) > 5:
+                    lines.append(f"   +{len(active_parent)-5}more")
 
         except:
             na = s.get("next_actions", [])
@@ -154,11 +138,14 @@ except:
 
 # ALERTS
 try:
-    a = json.load(open(os.path.join(cwd, "state/ALERTS.json")))
+    alerts_path = os.path.join(cwd, "state/ALERTS.json")
+    a = json.load(open(alerts_path))
     rule_alerts = a.get("rule_alerts", [])
     llm_alerts = a.get("llm_alerts", [])
     high = []
     warn = []
+    l2_items = []
+
     for r in rule_alerts:
         msg = r.get("message") or r.get("title") or ""
         cat = r.get("type", "")
@@ -168,15 +155,22 @@ try:
                 high.append(label)
             else:
                 warn.append(label)
+
     for l in llm_alerts:
         msg = l.get("message") or l.get("title") or ""
-        cat = l.get("category", "")
         if msg:
-            label = f"[{cat}] {msg}" if cat else msg
-            if l.get("severity") == "high":
-                high.append(label)
-            else:
-                warn.append(label)
+            cat = l.get("category", "")
+            severity = l.get("severity", "")
+            prefix = "/".join([x for x in [severity, cat] if x])
+            label = f"[{prefix}] {msg}" if prefix else msg
+            suggestion = (
+                l.get("suggestion")
+                or l.get("recommended_action")
+                or l.get("action")
+                or l.get("fix")
+            )
+            l2_items.append((label, suggestion))
+
     if high:
         lines.append(f"  RISK({len(high)}):")
         for h in high[:3]:
@@ -185,15 +179,72 @@ try:
         lines.append(f"  NOTE({len(warn)}):")
         for w in warn[:3]:
             lines.append(f"    {w}")
+    if l2_items:
+        llm_checked = a.get("llm_checked")
+        displayed_llm_checked = a.get("displayed_llm_checked")
+        label = "NEW L2" if llm_checked and llm_checked != displayed_llm_checked else "L2"
+        lines.append(f"  {label}({len(l2_items)}):")
+        for msg, suggestion in l2_items[:3]:
+            lines.append(f"    {msg}")
+            if suggestion:
+                lines.append(f"      -> {suggestion}")
+        if len(l2_items) > 3:
+            lines.append(f"    +{len(l2_items)-3}more")
+    if a.get("llm_checked") and a.get("displayed_llm_checked") != a.get("llm_checked"):
+        a["displayed_llm_checked"] = a["llm_checked"]
+        try:
+            with open(alerts_path, "w") as f:
+                json.dump(a, f, ensure_ascii=False, indent=2)
+                f.write("\n")
+        except:
+            pass
 except:
     pass
 
 # PROPOSALS
 try:
-    p = json.load(open(os.path.join(cwd, "state/REVIEW_PROPOSALS.json")))
+    proposals_path = os.path.join(cwd, "state/REVIEW_PROPOSALS.json")
+    p = json.load(open(proposals_path))
     props = p.get("proposals", [])
     if props:
-        lines.append(f"  proposals: {len(props)} pending")
+        last_run = p.get("last_run")
+        displayed_last_run = p.get("displayed_last_run")
+        label = "NEW L3 PROPOSALS" if last_run and last_run != displayed_last_run else "L3 PROPOSALS"
+        lines.append(f"  {label}({len(props)}):")
+        for item in props[:3]:
+            if isinstance(item, str):
+                lines.append(f"    {item}")
+                continue
+
+            category = item.get("category") or item.get("type") or item.get("layer") or ""
+            title = (
+                item.get("title")
+                or item.get("name")
+                or item.get("summary")
+                or item.get("message")
+                or str(item)
+            )
+            prefix = f"[{category}] " if category else ""
+            lines.append(f"    {prefix}{title}")
+
+            recommendation = (
+                item.get("recommendation")
+                or item.get("suggestion")
+                or item.get("action")
+                or item.get("fix")
+            )
+            if recommendation:
+                lines.append(f"      -> {recommendation}")
+        if len(props) > 3:
+            lines.append(f"    +{len(props)-3}more")
+    if p.get("last_run") and p.get("displayed_last_run") != p.get("last_run"):
+        p["displayed_last_run"] = p["last_run"]
+        try:
+            with open(proposals_path, "w") as f:
+                json.dump(p, f, ensure_ascii=False, indent=2)
+                f.write("\n")
+        except:
+            pass
 except:
     pass
 

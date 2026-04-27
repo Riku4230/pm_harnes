@@ -1,6 +1,7 @@
 {
   "rule_alerts": [],
   "llm_alerts": [],
-  "rule_checked": null,
-  "llm_checked": null
+  "rule_checked": "2026-04-27T11:29:52.542107",
+  "llm_checked": null,
+  "displayed_llm_checked": null
 }

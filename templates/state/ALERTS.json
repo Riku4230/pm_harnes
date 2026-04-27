@@ -2,5 +2,6 @@
   "rule_alerts": [],
   "llm_alerts": [],
   "rule_checked": null,
-  "llm_checked": null
+  "llm_checked": null,
+  "displayed_llm_checked": null
 }

@@ -55,7 +55,9 @@ if [ "$LLM_HOURS" -ge 6 ]; then
 - やるべきだがやっていないこと
 
 結果をstate/ALERTS.jsonのllm_alertsフィールドに書き出してください。
-llm_checkedフィールドも現在時刻ISO8601で更新。既存のrule_alertsは変更しない。
+各alertはseverity/category/message/suggestionを含める。
+llm_checkedフィールドも現在時刻ISO8601で更新。
+既存のrule_alerts/rule_checked/displayed_llm_checkedは変更しない。
 高確信のものだけ。" \
     --allowed-tools "Read,Write" \
     --model sonnet \
@@ -101,6 +103,9 @@ if [ "$ITEMS" -ge 20 ] || ([ "$ITEMS" -ge 10 ] && [ "$LAST_DAYS" -ge 3 ]); then
   ③新規対応 → 新しいルールやスキル
 
 結果をstate/REVIEW_PROPOSALS.jsonに書き出し。
+各proposalはcategory/title/summary/recommendation/impactを含める。
+last_runフィールドも現在時刻ISO8601で更新。
+既存のdisplayed_last_runは変更しない。
 rules/やskills/を直接書き換えてはいけない。" \
     --allowed-tools "Read,Write" \
     --model sonnet \
