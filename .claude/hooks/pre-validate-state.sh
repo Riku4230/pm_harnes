@@ -198,7 +198,7 @@ if errors:
     for e in errors:
         print(f'  - {e}', file=sys.stderr)
     sys.exit(2)
-" 2>&1
+"
 
 RESULT=$?
 [ $RESULT -eq 2 ] && exit 2

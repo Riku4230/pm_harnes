@@ -69,7 +69,8 @@ llm_checkedフィールドも現在時刻ISO8601で更新。
       --model sonnet \
       > /dev/null 2>&1
     rm -f "$L2_LOCK"
-  ) &
+  ) </dev/null >/dev/null 2>&1 &
+  disown
 fi
 
 # --- L3: ハーネス自己改善（10件+3日 or 20件強制） ---
@@ -122,7 +123,8 @@ rules/やskills/を直接書き換えてはいけない。" \
       --model sonnet \
       > /dev/null 2>&1
     rm -f "$L3_LOCK"
-  ) &
+  ) </dev/null >/dev/null 2>&1 &
+  disown
 fi
 
 exit 0

@@ -28,8 +28,8 @@ except:
 
 case "$FILE_PATH" in
   */.claude/rules/*|*/.codex/*)
-    echo "PM-Harness: WARNING — ハーネスルール編集: $FILE_PATH （context-reviewスキル経由を推奨）" >&2
-    exit 0
+    echo "PM-Harness: BLOCKED — ルール編集はcontext-reviewスキル（Bash経由）で行ってください: $FILE_PATH" >&2
+    exit 2
     ;;
   */.claude/skills/*|*/.claude/hooks/*|*/.claude/settings.json)
     echo "PM-Harness: BLOCKED — ハーネスインフラの直接編集は禁止です（Bash経由 or 別ブランチ+PRで）: $FILE_PATH" >&2

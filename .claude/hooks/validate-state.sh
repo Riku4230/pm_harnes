@@ -110,7 +110,7 @@ if warnings:
     print('--- Impact Analysis ---')
     for w in warnings:
         print(f'  {w}')
-" 2>&1
+"
     fi
     ;;
 esac

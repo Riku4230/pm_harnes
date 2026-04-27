@@ -101,7 +101,7 @@ if len(log['sessions']) > 50:
 
 with open(log_path, 'w') as f:
     json.dump(log, f, ensure_ascii=False, indent=2)
-" 2>/dev/null || true
+"
 
 # --- 2. L1: ルールベースFB（毎回） ---
 RULES_SCRIPT="$CWD/.claude/hooks/project-advisor-rules.sh"
@@ -124,7 +124,7 @@ else:
 " 2>/dev/null || echo "999")
 
 if [ "$LLM_HOURS" -ge 24 ]; then
-  echo "PM-Harness: L2 LLM FB due (${LLM_HOURS}h since last check)" > /dev/null
+  echo "PM-Harness: L2 LLM FB due (${LLM_HOURS}h since last check)" >&2
 fi
 
 # --- 4. L3判定（表示のみ） ---
@@ -135,5 +135,5 @@ print(len(json.load(open(f)).get('items',[]))) if os.path.exists(f) else print(0
 " 2>/dev/null || echo "0")
 
 if [ "$ITEMS" -ge 10 ]; then
-  echo "PM-Harness: ${ITEMS} improvements pending. Run context-review." > /dev/null
+  echo "PM-Harness: ${ITEMS} improvements pending. Run context-review." >&2
 fi
