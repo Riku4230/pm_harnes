@@ -113,7 +113,7 @@ if os.path.exists(status_path):
                     })
     except: pass
 
-# 6. Source-of-Truth整合性
+# 6. データ不一致検出
 if os.path.exists(status_path) and os.path.exists(wbs):
     try:
         s = json.load(open(status_path))
@@ -128,14 +128,14 @@ if os.path.exists(status_path) and os.path.exists(wbs):
         ct = s.get('current_task')
         if ct and task_ids and ct not in task_ids:
             alerts.append({
-                'type': 'source_of_truth',
+                'type': 'データ不一致',
                 'severity': 'medium',
                 'message': f\"STATUS.current_task '{ct}' がWBS.jsonに存在しない\"
             })
         for na in s.get('next_actions', []):
             if task_ids and na not in task_ids:
                 alerts.append({
-                    'type': 'source_of_truth',
+                    'type': 'データ不一致',
                     'severity': 'low',
                     'message': f\"STATUS.next_actions '{na}' がWBS.jsonに存在しない\"
                 })

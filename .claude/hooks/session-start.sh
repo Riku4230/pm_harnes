@@ -184,12 +184,10 @@ try:
         displayed_llm_checked = a.get("displayed_llm_checked")
         label = "NEW L2" if llm_checked and llm_checked != displayed_llm_checked else "L2"
         lines.append(f"  {label}({len(l2_items)}):")
-        for msg, suggestion in l2_items[:3]:
+        for msg, suggestion in l2_items:
             lines.append(f"    {msg}")
             if suggestion:
                 lines.append(f"      -> {suggestion}")
-        if len(l2_items) > 3:
-            lines.append(f"    +{len(l2_items)-3}more")
     if a.get("llm_checked") and a.get("displayed_llm_checked") != a.get("llm_checked"):
         a["displayed_llm_checked"] = a["llm_checked"]
         try:
