@@ -1,8 +1,8 @@
 #!/bin/bash
 # PreToolUse(Edit|Write) で発火
-# state/ または docs/ への変更を検知
-# RISK.json/CHANGELOG.jsonへの書き込みはログ表示
-# .claude/rules/ や .claude/skills/ への直接書き込みはブロック（context-review経由で行う）
+# .claude/配下への変更を制御:
+#   rules/ → WARNING（context-reviewでの編集を許可するため）
+#   skills/, hooks/ → BLOCK（別ブランチ+PR or Bash経由で）
 set -e
 
 INPUT=$(cat)
@@ -15,12 +15,15 @@ except:
 " 2>/dev/null || echo "")
 
 case "$FILE_PATH" in
-  */.claude/rules/*|*/.claude/skills/*|*/.claude/hooks/*|*/.claude/policies/*|*/.claude/personas/*)
-    echo "PM-Harness: BLOCKED — ハーネスファイルの直接編集はcontext-reviewスキルで行ってください: $FILE_PATH" >&2
+  */.claude/rules/*)
+    echo "PM-Harness: WARNING — ハーネスルール編集: $FILE_PATH （context-reviewスキル経由を推奨）" >&2
+    exit 0
+    ;;
+  */.claude/skills/*|*/.claude/hooks/*|*/.claude/settings.json)
+    echo "PM-Harness: BLOCKED — ハーネスインフラの直接編集は禁止です（Bash経由 or 別ブランチ+PRで）: $FILE_PATH" >&2
     exit 2
     ;;
   */state/*|*/docs/*)
-    echo "PM-Harness: Modifying $FILE_PATH"
     exit 0
     ;;
   *)

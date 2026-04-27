@@ -221,12 +221,12 @@ my-project/
 |---|---|---|
 | setup | 初回セットアップ（ヒアリング→ファイル生成→Git→Schedule） | full |
 | source-sync | Slack/Notion等から情報取得（定期実行可） | edit |
-| context-pack | 情報収集・整理 | edit |
 | meeting-import | 議事録→決定事項+TODO | edit |
 | wbs-update | WBS進捗更新 | edit |
+| decompose | タスク分解（1-2日粒度） | edit |
 | risk-check | リスク再評価 | edit |
 | draft-update | 下書き生成（送信不可） | edit |
-| context-sync | ドキュメント整合性確認 | readonly |
+| doc-check | ドキュメント整合性確認 | readonly |
 | context-review | ステアリング実行 | full |
 | cross-review | Cross-Modelレビュー | readonly |
 | retro | 振り返り+ハーネス改善（定期実行可） | full |

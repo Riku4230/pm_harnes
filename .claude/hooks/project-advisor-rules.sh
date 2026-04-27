@@ -74,14 +74,12 @@ if os.path.exists(cl):
     try:
         entries = json.load(open(cl)).get('entries', [])
         decisions = [e for e in entries if e.get('type') == 'decision']
-        # 直近の決定とSTATUS.jsonの矛盾チェック（簡易版: 決定キーワードの存在確認）
-        status = '$CWD/state/STATUS.json'
-        if decisions and os.path.exists(status):
-            s = json.load(open(status))
+        status_path = '$CWD/state/STATUS.json'
+        if decisions and os.path.exists(status_path):
+            s = json.load(open(status_path))
             notes = str(s.get('context_notes', '')) + str(s.get('current_task', ''))
             for d in decisions[-5:]:
                 desc = d.get('description', '')
-                # non-goalとして記録された項目が作業中に含まれていたら警告
                 if d.get('scope') == 'non-goal' and desc and desc.lower() in notes.lower():
                     alerts.append({
                         'type': 'decision_drift',
@@ -115,7 +113,35 @@ if os.path.exists(status_path):
                     })
     except: pass
 
-# 6. IMPROVEMENTS蓄積チェック
+# 6. Source-of-Truth整合性
+if os.path.exists(status_path) and os.path.exists(wbs):
+    try:
+        s = json.load(open(status_path))
+        w = json.load(open(wbs))
+        task_ids = set()
+        for t in w.get('tasks', []):
+            if t.get('id'): task_ids.add(t['id'])
+            if t.get('name'): task_ids.add(t['name'])
+            for st in t.get('subtasks', []):
+                if st.get('id'): task_ids.add(st['id'])
+                if st.get('name'): task_ids.add(st['name'])
+        ct = s.get('current_task')
+        if ct and task_ids and ct not in task_ids:
+            alerts.append({
+                'type': 'source_of_truth',
+                'severity': 'medium',
+                'message': f\"STATUS.current_task '{ct}' がWBS.jsonに存在しない\"
+            })
+        for na in s.get('next_actions', []):
+            if task_ids and na not in task_ids:
+                alerts.append({
+                    'type': 'source_of_truth',
+                    'severity': 'low',
+                    'message': f\"STATUS.next_actions '{na}' がWBS.jsonに存在しない\"
+                })
+    except: pass
+
+# 7. IMPROVEMENTS蓄積チェック
 imp = '$CWD/state/IMPROVEMENTS.json'
 if os.path.exists(imp):
     try:
