@@ -14,9 +14,11 @@ SessionStart hookがcontextにプロジェクト状況を注入する。
 3. 表示後「何から始めますか？」または質問への回答
 
 ### 構成
+- .claude/hooks/ — セッション管理 + バリデーション + 3層フィードバック（Codexと共有）
 - .claude/rules/ — PM判断原則 + ルーティング + anti-patterns（60行以下）
-- .claude/hooks/ — セッション管理 + バリデーション + 3層フィードバック
 - .claude/skills/ — PMワークフロー（12スキル）
+- .codex/hooks.json — Codex CLI用フック設定（.claude/hooks/を参照）
+- AGENTS.md — Codex CLI用指示ファイル（CLAUDE.md + rules統合）
 
 ### データ
 - docs/ — 人間向けドキュメント（Markdown、外部共有可）

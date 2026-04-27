@@ -1,5 +1,5 @@
 #!/bin/bash
-# PostToolUse(Edit|Write) で発火
+# PostToolUse(Edit|Write|apply_patch) で発火
 # state/*.jsonの変更後にImpact Analysis（advisory警告のみ、ブロックしない）
 # スキーマ検証はpre-validate-state.sh（PreToolUse）で実行済み
 set -e
@@ -11,7 +11,18 @@ INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | python3 -c "
 import sys, json
 try:
-    print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))
+    inp = json.load(sys.stdin)
+    ti = inp.get('tool_input', {})
+    if inp.get('tool_name') == 'apply_patch':
+        patch = ti.get('patch', '')
+        for line in patch.split(chr(10)):
+            if line.startswith('*** Update File:') or line.startswith('*** Add File:'):
+                print(line.split(':', 1)[1].strip())
+                break
+        else:
+            print('')
+    else:
+        print(ti.get('file_path', ''))
 except:
     print('')
 " 2>/dev/null || echo "")

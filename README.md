@@ -53,10 +53,12 @@ cd ~/my-project
 ### 2. セットアップ
 
 ```bash
-claude
+claude          # Claude Code
+# or
+codex           # OpenAI Codex CLI
 ```
 
-Claude Codeが起動したら:
+どちらかが起動したら:
 
 ```
 あなた: 「セットアップして」

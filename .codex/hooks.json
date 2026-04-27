@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-start.sh",
+            "statusMessage": "PM-Harness: プロジェクト状況を読み込み中..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/approval-gate.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-validate-state.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/validate-state.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-end.sh",
+            "statusMessage": "PM-Harness: セッション記録中..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/stop-advisor.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
